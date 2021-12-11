@@ -64,3 +64,8 @@ var VisibilityIcon *widget.Icon = func() *widget.Icon {
 	icon, _ := widget.NewIcon(icons.ActionVisibility)
 	return icon
 }()
+
+var RadioIcon *widget.Icon = func() *widget.Icon {
+	icon, _ := widget.NewIcon(icons.AVRadio)
+	return icon
+}()

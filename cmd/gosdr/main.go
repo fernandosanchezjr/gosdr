@@ -2,18 +2,17 @@ package main
 
 import (
 	"flag"
+	"github.com/fernandosanchezjr/gosdr/cmd/gosdr/themes"
 	"github.com/fernandosanchezjr/gosdr/devices/sdr"
 	log "github.com/sirupsen/logrus"
 	"os"
 
 	"gioui.org/app"
-	"gioui.org/font/gofont"
 	"gioui.org/io/system"
 	"gioui.org/layout"
 	"gioui.org/op"
-	"gioui.org/widget/material"
-	page "github.com/fernandosanchezjr/gosdr/cmd/gosdr/pages"
-	"github.com/fernandosanchezjr/gosdr/cmd/gosdr/pages/deviceselection"
+	"github.com/fernandosanchezjr/gosdr/cmd/gosdr/pages"
+	sdrPage "github.com/fernandosanchezjr/gosdr/cmd/gosdr/pages/sdr"
 )
 
 func main() {
@@ -31,11 +30,11 @@ func main() {
 }
 
 func loop(w *app.Window, scanner *sdr.Scanner) error {
-	th := material.NewTheme(gofont.Collection())
+	var th = themes.NewTheme()
 	var ops op.Ops
+	var router = pages.NewRouter()
 
-	router := page.NewRouter()
-	router.Register(0, deviceselection.New(&router))
+	router.Register(0, sdrPage.New(&router))
 
 	for {
 		select {
