@@ -17,6 +17,7 @@ type State struct {
 	sdrManager     *sdr.Manager
 	deviceCards    map[devices.Id]layout.FlexChild
 	connectButtons map[devices.Id]*widget.Clickable
+	samplingMode   map[devices.Id]*widget.Enum
 }
 
 func NewState(th *themes.Theme, manager *sdr.Manager) *State {
@@ -25,6 +26,7 @@ func NewState(th *themes.Theme, manager *sdr.Manager) *State {
 		sdrManager:     manager,
 		deviceCards:    make(map[devices.Id]layout.FlexChild),
 		connectButtons: make(map[devices.Id]*widget.Clickable),
+		samplingMode:   make(map[devices.Id]*widget.Enum),
 	}
 }
 
@@ -45,9 +47,11 @@ func (s *State) AddDevice(id devices.Id) {
 			return
 		}
 		var connectButton = new(widget.Clickable)
+		var samplingMode = new(widget.Enum)
 		s.connectButtons[id] = connectButton
+		s.samplingMode[id] = samplingMode
 		s.deviceCards[id] = layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-			return components.DeviceCard(gtx, s.th, s.sdrManager, device, connectButton)
+			return components.DeviceCard(gtx, s.th, s.sdrManager, device, connectButton, samplingMode)
 		})
 	}
 }

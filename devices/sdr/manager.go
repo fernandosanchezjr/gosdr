@@ -130,6 +130,9 @@ func (s *Manager) loop() {
 func (s *Manager) Stop() {
 	close(s.quitChan)
 	s.wg.Wait()
+	for id := range s.connections {
+		s.Close(id)
+	}
 }
 
 func (s *Manager) Open(id devices.Id) (devices.Connection, error) {
@@ -155,6 +158,14 @@ func (s *Manager) Open(id devices.Id) (devices.Connection, error) {
 	}
 }
 
+func (s *Manager) OpenAsync(id devices.Id) {
+	go func() {
+		if _, openErr := s.Open(id); openErr != nil {
+			log.WithFields(id.Fields()).WithError(openErr).Error("OpenAsync")
+		}
+	}()
+}
+
 func (s *Manager) GetInfo(id devices.Id) (device *devices.Info, found bool) {
 	s.mtx.Lock()
 	defer s.mtx.Unlock()
@@ -178,4 +189,8 @@ func (s *Manager) Close(id devices.Id) {
 		}
 	}
 	delete(s.connections, id)
+}
+
+func (s *Manager) CloseAsync(id devices.Id) {
+	go s.Close(id)
 }

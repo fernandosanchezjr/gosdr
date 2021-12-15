@@ -8,6 +8,7 @@ import (
 	"gioui.org/widget/material"
 	"github.com/fernandosanchezjr/gosdr/cmd/gosdr/themes"
 	"github.com/fernandosanchezjr/gosdr/devices"
+	"github.com/fernandosanchezjr/gosdr/devices/rtlsdr"
 	"github.com/fernandosanchezjr/gosdr/devices/sdr"
 	log "github.com/sirupsen/logrus"
 )
@@ -53,24 +54,14 @@ func DeviceCard(
 	manager *sdr.Manager,
 	device *devices.Info,
 	connectButton *widget.Clickable,
+	samplingMode *widget.Enum,
 ) D {
 	var connectClicked bool
 	var id = device.Id()
 	var isConnected = manager.IsConnected(id)
-	for connectButton.Clicked() {
-		connectClicked = true
-	}
-	if connectClicked {
-		if isConnected {
-			manager.Close(id)
-		} else {
-			go func() {
-				if _, openErr := manager.Open(id); openErr != nil {
-					log.WithFields(device.Fields()).WithError(openErr).Error("Open")
-				}
-			}()
-		}
-	}
+	var deviceDetails []layout.FlexChild
+	handleConnectButton(connectButton, connectClicked, isConnected, manager, id)
+	deviceDetails = generateDeviceDetails(isConnected, manager, id, deviceDetails, th, samplingMode)
 	var widgets = []layout.FlexChild{
 		layout.Rigid(func(gtx C) D {
 			return deviceTitle(gtx, th, device)
@@ -78,22 +69,65 @@ func DeviceCard(
 		layout.Rigid(func(gtx C) D {
 			return deviceSubTitle(gtx, th, device)
 		}),
-		layout.Rigid(func(gtx C) D {
-			return layout.Inset{
-				Top:    unit.Dp(10),
-				Right:  unit.Dp(0),
-				Bottom: unit.Dp(10),
-				Left:   unit.Dp(0),
-			}.Layout(gtx, func(gtx C) D {
-				var button = material.Button(th.Theme, connectButton, connectLabel(isConnected))
-				if !isConnected {
-					button.Background = th.Primary.Dark.Bg
-				}
-				return button.Layout(gtx)
-			})
-		}),
 	}
+	widgets = append(widgets, deviceDetails...)
+	widgets = append(widgets, layout.Rigid(func(gtx C) D {
+		return layout.Inset{
+			Top:    unit.Dp(10),
+			Right:  unit.Dp(0),
+			Bottom: unit.Dp(10),
+			Left:   unit.Dp(0),
+		}.Layout(gtx, func(gtx C) D {
+			var button = material.Button(th.Theme, connectButton, connectLabel(isConnected))
+			if !isConnected {
+				button.Background = th.Primary.Dark.Bg
+			}
+			return button.Layout(gtx)
+		})
+	}))
 	return Card(gtx, th, func(gtx C) D {
 		return VerticalList(gtx, widgets...)
 	})
+}
+
+func generateDeviceDetails(
+	isConnected bool,
+	manager *sdr.Manager,
+	id devices.Id,
+	deviceDetails []layout.FlexChild,
+	th *themes.Theme,
+	samplingMode *widget.Enum,
+) []layout.FlexChild {
+	if isConnected {
+		if device, deviceErr := manager.Open(id); deviceErr != nil {
+			log.WithFields(device.Fields()).WithError(deviceErr).Error("Open")
+		} else if device != nil {
+			switch d := device.(type) {
+			case *rtlsdr.Connection:
+				deviceDetails = RTLSDRCardBody(th, samplingMode, d)
+				break
+			default:
+			}
+		}
+	}
+	return deviceDetails
+}
+
+func handleConnectButton(
+	connectButton *widget.Clickable,
+	connectClicked bool,
+	isConnected bool,
+	manager *sdr.Manager,
+	id devices.Id,
+) {
+	for connectButton.Clicked() {
+		connectClicked = true
+	}
+	if connectClicked {
+		if isConnected {
+			manager.CloseAsync(id)
+		} else {
+			manager.OpenAsync(id)
+		}
+	}
 }
