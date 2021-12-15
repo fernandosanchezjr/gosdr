@@ -26,10 +26,11 @@ type Router struct {
 	NavAnim component.VisibilityAnimation
 	*component.AppBar
 	*component.ModalLayer
-	Manager *sdr.Manager
+	SDRManager *sdr.Manager
+	State      *State
 }
 
-func NewRouter(sdrManager *sdr.Manager) Router {
+func NewRouter(th *themes.Theme, sdrManager *sdr.Manager) Router {
 	modal := component.NewModal()
 
 	nav := component.NewNav("GOSDR", "v0.0.1")
@@ -49,7 +50,8 @@ func NewRouter(sdrManager *sdr.Manager) Router {
 		ModalNavDrawer: modalNav,
 		AppBar:         bar,
 		NavAnim:        na,
-		Manager:        sdrManager,
+		SDRManager:     sdrManager,
+		State:          NewState(th, sdrManager),
 	}
 }
 

@@ -32,7 +32,7 @@ func main() {
 func loop(w *app.Window, sdrManager *sdr.Manager) error {
 	var th = themes.NewTheme()
 	var ops op.Ops
-	var router = pages.NewRouter(sdrManager)
+	var router = pages.NewRouter(th, sdrManager)
 
 	router.Register(0, sdrPage.New(&router))
 
@@ -49,6 +49,12 @@ func loop(w *app.Window, sdrManager *sdr.Manager) error {
 			}
 		case deviceEvent := <-sdrManager.DeviceChan:
 			log.WithFields(deviceEvent.Fields()).Info("Received device event")
+			switch deviceEvent.EventType {
+			case sdr.DeviceRemoved:
+				router.State.RemoveDevice(deviceEvent.Id)
+			case sdr.DeviceAdded:
+				router.State.AddDevice(deviceEvent.Id)
+			}
 			w.Invalidate()
 		}
 	}
