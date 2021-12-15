@@ -17,22 +17,22 @@ import (
 
 func main() {
 	flag.Parse()
-	var scanner = sdr.NewScanner()
+	var sdrManager = sdr.NewManager()
 	go func() {
 		w := app.NewWindow(app.Title("GOSDR"))
-		if err := loop(w, scanner); err != nil {
+		if err := loop(w, sdrManager); err != nil {
 			log.WithError(err).Fatal("Exiting")
 		}
-		scanner.Close()
+		sdrManager.Close()
 		os.Exit(0)
 	}()
 	app.Main()
 }
 
-func loop(w *app.Window, scanner *sdr.Scanner) error {
+func loop(w *app.Window, sdrManager *sdr.Manager) error {
 	var th = themes.NewTheme()
 	var ops op.Ops
-	var router = pages.NewRouter()
+	var router = pages.NewRouter(sdrManager)
 
 	router.Register(0, sdrPage.New(&router))
 
@@ -47,9 +47,8 @@ func loop(w *app.Window, scanner *sdr.Scanner) error {
 				router.Layout(gtx, th)
 				e.Frame(gtx.Ops)
 			}
-		case devices := <-scanner.DeviceChan:
-			log.WithField("count", len(devices)).Println("Device change notification")
-			router.SetDevices(devices)
+		case deviceEvent := <-sdrManager.DeviceChan:
+			log.WithFields(deviceEvent.Fields()).Info("Received device event")
 			w.Invalidate()
 		}
 	}

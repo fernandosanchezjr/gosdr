@@ -5,11 +5,11 @@ import (
 	"github.com/jpoirier/gortlsdr"
 )
 
-func ListDevices() []*devices.DeviceInfo {
-	var result []*devices.DeviceInfo
+func ListDevices() []*devices.Info {
+	var result []*devices.Info
 	var count = rtlsdr.GetDeviceCount()
 	for i := 0; i < count; i++ {
-		if info, err := GetDeviceInfo(i); err != nil {
+		if info, err := GetInfo(i); err != nil {
 			continue
 		} else {
 			result = append(result, info)

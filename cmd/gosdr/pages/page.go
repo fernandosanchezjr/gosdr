@@ -2,7 +2,7 @@ package pages
 
 import (
 	"github.com/fernandosanchezjr/gosdr/cmd/gosdr/themes"
-	"github.com/fernandosanchezjr/gosdr/devices"
+	"github.com/fernandosanchezjr/gosdr/devices/sdr"
 	"log"
 	"time"
 
@@ -26,10 +26,10 @@ type Router struct {
 	NavAnim component.VisibilityAnimation
 	*component.AppBar
 	*component.ModalLayer
-	Devices []*devices.DeviceInfo
+	Manager *sdr.Manager
 }
 
-func NewRouter() Router {
+func NewRouter(sdrManager *sdr.Manager) Router {
 	modal := component.NewModal()
 
 	nav := component.NewNav("GOSDR", "v0.0.1")
@@ -49,6 +49,7 @@ func NewRouter() Router {
 		ModalNavDrawer: modalNav,
 		AppBar:         bar,
 		NavAnim:        na,
+		Manager:        sdrManager,
 	}
 }
 
@@ -109,8 +110,4 @@ func (r *Router) Layout(gtx layout.Context, th *themes.Theme) layout.Dimensions 
 	flex.Layout(gtx, bar, content)
 	r.ModalLayer.Layout(gtx, th.Theme)
 	return layout.Dimensions{Size: gtx.Constraints.Max}
-}
-
-func (r *Router) SetDevices(devices []*devices.DeviceInfo) {
-	r.Devices = devices
 }

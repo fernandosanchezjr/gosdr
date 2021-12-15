@@ -6,7 +6,7 @@ import (
 )
 
 func TestOpen(t *testing.T) {
-	var device, openErr = Open(0)
+	var device, openErr = OpenIndex(0)
 	if openErr != nil {
 		t.Fatal(openErr)
 	}

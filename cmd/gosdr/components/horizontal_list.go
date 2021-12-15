@@ -6,6 +6,5 @@ func HorizontalList(gtx C, weightSum float32, widgets ...layout.FlexChild) D {
 	return layout.Flex{
 		Axis:      layout.Horizontal,
 		WeightSum: weightSum,
-		Alignment: layout.Middle,
 	}.Layout(gtx, widgets...)
 }

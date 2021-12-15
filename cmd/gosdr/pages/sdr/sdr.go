@@ -50,19 +50,17 @@ func (p *Page) NavItem() component.NavItem {
 }
 
 func (p *Page) Layout(gtx C, th *themes.Theme) D {
+	var widgets = make([]layout.FlexChild, len(p.Manager.KnownDevices))
+	var pos int
+	for _, device := range p.Manager.KnownDevices {
+		widgets[pos] = layout.Rigid(func(gtx C) D {
+			return components.DeviceCard(gtx, th, device)
+		})
+		pos += 1
+	}
 	return components.ListInset(gtx, unit.Dp(10), func(gtx C) D {
 		return material.List(th.Theme, &p.List).Layout(gtx, 1, func(gtx C, _ int) D {
-			var widgets = make([]layout.StackChild, len(p.Devices))
-			for pos, device := range p.Devices {
-				widgets[pos] = layout.Expanded(func(gtx C) D {
-					return components.Card(gtx, th, func(gtx C) D {
-						return components.HorizontalList(gtx, 1,
-							layout.Flexed(1, material.H6(th.Theme, device.String()).Layout),
-						)
-					})
-				})
-			}
-			return layout.Stack{}.Layout(gtx, widgets...)
+			return components.VerticalList(gtx, widgets...)
 		})
 	})
 }

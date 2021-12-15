@@ -5,6 +5,6 @@ import (
 	"github.com/fernandosanchezjr/gosdr/devices/rtlsdr"
 )
 
-func ListDevices() []*devices.DeviceInfo {
+func ListDevices() []*devices.Info {
 	return rtlsdr.ListDevices()
 }
