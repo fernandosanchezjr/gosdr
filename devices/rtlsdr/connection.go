@@ -55,7 +55,7 @@ func OpenIndex(index int) (*Connection, error) {
 func (d *Connection) Close() error {
 	var err = d.context.Close()
 	if err != nil {
-		log.WithError(err).WithFields(d.Info.Fields()).Error("context.Close()")
+		log.WithError(err).WithFields(d.Info.Fields()).Error("context.Stop()")
 	}
 	d.context = nil
 	return err

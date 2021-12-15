@@ -21,10 +21,12 @@ const scanInterval = time.Second * 1
 const deviceEventBufferSize = 64
 
 type Manager struct {
+	mtx          sync.Mutex
 	wg           sync.WaitGroup
 	quitChan     chan struct{}
 	DeviceChan   chan DeviceEvent
-	KnownDevices map[devices.Id]*devices.Info
+	knownDevices map[devices.Id]*devices.Info
+	connections  map[devices.Id]devices.Connection
 }
 
 type DeviceEvent struct {
@@ -55,7 +57,8 @@ func NewManager() *Manager {
 	var scanner = &Manager{
 		quitChan:     make(chan struct{}),
 		DeviceChan:   make(chan DeviceEvent, deviceEventBufferSize),
-		KnownDevices: make(map[devices.Id]*devices.Info),
+		knownDevices: make(map[devices.Id]*devices.Info),
+		connections:  make(map[devices.Id]devices.Connection),
 	}
 	scanner.wg.Add(1)
 	go scanner.loop()
@@ -80,15 +83,18 @@ func deviceIdSet(deviceMap map[devices.Id]*devices.Info) (ids goset.Set) {
 	return
 }
 
-func (s *Manager) calculateDifferences(foundDevices []*devices.Info) {
+func (s *Manager) processDevices(foundDevices []*devices.Info) {
+	s.mtx.Lock()
+	defer s.mtx.Unlock()
 	var foundMap = toDeviceMap(foundDevices)
-	var knownSet, foundSet = deviceIdSet(s.KnownDevices), deviceIdSet(foundMap)
+	var knownSet, foundSet = deviceIdSet(s.knownDevices), deviceIdSet(foundMap)
 	var knownDiff = knownSet.Diff(foundSet)
 	var foundDiff = foundSet.Diff(knownSet)
 	for _, id := range knownDiff.Elements() {
 		var deviceId = id.(devices.Id)
-		var lostDeviceInfo = s.KnownDevices[deviceId]
-		delete(s.KnownDevices, deviceId)
+		var lostDeviceInfo = s.knownDevices[deviceId]
+		go s.Close(deviceId)
+		delete(s.knownDevices, deviceId)
 		s.DeviceChan <- DeviceEvent{
 			EventType: DeviceRemoved,
 			Id:        deviceId,
@@ -98,7 +104,7 @@ func (s *Manager) calculateDifferences(foundDevices []*devices.Info) {
 	for _, id := range foundDiff.Elements() {
 		var deviceId = id.(devices.Id)
 		var foundDevice = foundMap[deviceId]
-		s.KnownDevices[deviceId] = foundDevice
+		s.knownDevices[deviceId] = foundDevice
 		s.DeviceChan <- DeviceEvent{
 			EventType: DeviceAdded,
 			Id:        deviceId,
@@ -109,28 +115,67 @@ func (s *Manager) calculateDifferences(foundDevices []*devices.Info) {
 
 func (s *Manager) loop() {
 	var ticker = time.NewTicker(scanInterval)
-	s.calculateDifferences(ListDevices())
+	s.processDevices(ListDevices())
 	for {
 		select {
 		case <-s.quitChan:
 			s.wg.Done()
 			return
 		case <-ticker.C:
-			s.calculateDifferences(ListDevices())
+			s.processDevices(ListDevices())
 		}
 	}
 }
 
-func (s *Manager) Close() {
+func (s *Manager) Stop() {
 	close(s.quitChan)
 	s.wg.Wait()
 }
 
-func (s *Manager) Open(info *devices.Info) (devices.Connection, error) {
-	switch info.Type {
-	case devices.RTLSDR:
-		return rtlsdr.OpenIndex(info.Index)
-	default:
-		return nil, fmt.Errorf("unknown device type: %d", info.Type)
+func (s *Manager) Open(id devices.Id) (devices.Connection, error) {
+	s.mtx.Lock()
+	defer s.mtx.Unlock()
+	if conn, found := s.connections[id]; found {
+		return conn, nil
 	}
+	if info, found := s.knownDevices[id]; found {
+		switch info.Type {
+		case devices.RTLSDR:
+			if conn, connErr := rtlsdr.OpenIndex(info.Index); connErr != nil {
+				return nil, connErr
+			} else {
+				s.connections[id] = conn
+				return conn, nil
+			}
+		default:
+			return nil, fmt.Errorf("unknown device type: %d", info.Type)
+		}
+	} else {
+		return nil, nil
+	}
+}
+
+func (s *Manager) GetInfo(id devices.Id) (device *devices.Info, found bool) {
+	s.mtx.Lock()
+	defer s.mtx.Unlock()
+	device, found = s.knownDevices[id]
+	return
+}
+
+func (s *Manager) IsConnected(id devices.Id) bool {
+	s.mtx.Lock()
+	defer s.mtx.Unlock()
+	var _, found = s.connections[id]
+	return found
+}
+
+func (s *Manager) Close(id devices.Id) {
+	s.mtx.Lock()
+	defer s.mtx.Unlock()
+	if conn, found := s.connections[id]; found {
+		if closeErr := conn.Close(); closeErr != nil {
+			log.WithFields(conn.Fields()).WithError(closeErr).Warn("Close")
+		}
+	}
+	delete(s.connections, id)
 }

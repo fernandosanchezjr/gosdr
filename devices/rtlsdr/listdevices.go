@@ -11,7 +11,7 @@ func ListDevices() []*devices.Info {
 	for i := 0; i < count; i++ {
 		if info, err := GetInfo(i); err != nil {
 			continue
-		} else {
+		} else if info.Valid() {
 			result = append(result, info)
 		}
 	}

@@ -23,7 +23,7 @@ func main() {
 		if err := loop(w, sdrManager); err != nil {
 			log.WithError(err).Fatal("Exiting")
 		}
-		sdrManager.Close()
+		sdrManager.Stop()
 		os.Exit(0)
 	}()
 	app.Main()

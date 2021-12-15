@@ -2,6 +2,7 @@ package pages
 
 import (
 	"gioui.org/layout"
+	"gioui.org/widget"
 	"github.com/fernandosanchezjr/gosdr/cmd/gosdr/components"
 	"github.com/fernandosanchezjr/gosdr/cmd/gosdr/themes"
 	"github.com/fernandosanchezjr/gosdr/devices"
@@ -11,17 +12,19 @@ import (
 )
 
 type State struct {
-	mtx         sync.Mutex
-	th          *themes.Theme
-	sdrManager  *sdr.Manager
-	deviceCards map[devices.Id]layout.FlexChild
+	mtx            sync.Mutex
+	th             *themes.Theme
+	sdrManager     *sdr.Manager
+	deviceCards    map[devices.Id]layout.FlexChild
+	connectButtons map[devices.Id]*widget.Clickable
 }
 
 func NewState(th *themes.Theme, manager *sdr.Manager) *State {
 	return &State{
-		th:          th,
-		sdrManager:  manager,
-		deviceCards: make(map[devices.Id]layout.FlexChild),
+		th:             th,
+		sdrManager:     manager,
+		deviceCards:    make(map[devices.Id]layout.FlexChild),
+		connectButtons: make(map[devices.Id]*widget.Clickable),
 	}
 }
 
@@ -29,19 +32,22 @@ func (s *State) RemoveDevice(id devices.Id) {
 	s.mtx.Lock()
 	defer s.mtx.Unlock()
 	delete(s.deviceCards, id)
+	delete(s.connectButtons, id)
 }
 
 func (s *State) AddDevice(id devices.Id) {
 	s.mtx.Lock()
 	defer s.mtx.Unlock()
 	if _, found := s.deviceCards[id]; !found {
-		var device, deviceFound = s.sdrManager.KnownDevices[id]
+		var device, deviceFound = s.sdrManager.GetInfo(id)
 		if !deviceFound {
 			log.WithFields(id.Fields()).Warn("AddDevice could not retrieve device")
 			return
 		}
+		var connectButton = new(widget.Clickable)
+		s.connectButtons[id] = connectButton
 		s.deviceCards[id] = layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-			return components.DeviceCard(gtx, s.th, device)
+			return components.DeviceCard(gtx, s.th, s.sdrManager, device, connectButton)
 		})
 	}
 }

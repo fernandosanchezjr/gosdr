@@ -43,6 +43,10 @@ func (di *Info) Fields() logrus.Fields {
 	}
 }
 
+func (di *Info) Valid() bool {
+	return di.Manufacturer != "" && di.ProductName != "" && di.Serial != ""
+}
+
 func (di *Info) Equals(other *Info) bool {
 	return di.Type == other.Type && di.Index == other.Index && di.Manufacturer == other.Manufacturer &&
 		di.ProductName == other.ProductName && di.Serial == other.Serial
