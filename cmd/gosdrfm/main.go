@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	parseFlags()
+	config.ParseFlags(parseFrequency)
 	config.SetupLogger()
 	var selectedDevice = make(chan devices.Id, 64)
 	var manager = sdr.NewManager()
