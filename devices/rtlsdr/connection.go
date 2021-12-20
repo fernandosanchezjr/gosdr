@@ -21,6 +21,7 @@ type Connection struct {
 	OffsetTuning    bool
 	SampleRate      utils.Hertz
 	AGCMode         bool
+	AutoGain        bool
 	BiasTee         bool
 	Gain            float32
 	Gains           []float32
@@ -53,6 +54,9 @@ func OpenIndex(index int) (*Connection, error) {
 }
 
 func (d *Connection) Close() error {
+	if !d.IsOpen() {
+		return nil
+	}
 	var err = d.context.Close()
 	if err != nil {
 		log.WithError(err).WithFields(d.Info.Fields()).Error("context.Stop()")
@@ -107,6 +111,7 @@ func (d *Connection) Fields() log.Fields {
 	f["offsetTuning"] = d.OffsetTuning
 	f["sampleRate"] = d.SampleRate
 	f["agcMode"] = d.AGCMode
+	f["autoGain"] = d.AutoGain
 	f["biasTee"] = d.BiasTee
 	f["gain"] = d.Gain
 	f["gains"] = d.Gains
@@ -118,4 +123,101 @@ func (d *Connection) Fields() log.Fields {
 
 func (d *Connection) GetInfo() *devices.Info {
 	return d.Info
+}
+
+func (d *Connection) GetAGC() bool {
+	return d.AGCMode
+}
+
+func (d *Connection) SetAGC(enabled bool) error {
+	var err = d.context.SetAgcMode(enabled)
+	if err == nil {
+		d.AGCMode = enabled
+	}
+	return err
+}
+
+func (d *Connection) GetAutoGain() bool {
+	return d.AutoGain
+}
+
+func (d *Connection) SetAutoGain(enabled bool) error {
+	var err = d.context.SetTunerGainMode(!enabled)
+	if err == nil {
+		d.AutoGain = enabled
+	}
+	return err
+}
+
+func findNearestGain(gain float32, gains []float32) float32 {
+	if len(gains) == 0 {
+		return 0.0
+	}
+	var min, max = gains[0], gains[len(gains)-1]
+	if gain < min {
+		return min
+	}
+	if gain > max {
+		return max
+	}
+	for i := 0; i < len(gains)-1; i++ {
+		var current, next = gains[i], gains[i+1]
+		if gain > next {
+			continue
+		}
+		var diffLow, diffHigh = gain - current, next - gain
+		if diffHigh <= diffLow {
+			return next
+		} else {
+			return current
+		}
+	}
+	return max
+}
+
+func (d *Connection) GetTunerGain() float32 {
+	return d.Gain
+}
+
+func (d *Connection) SetTunerGain(gain float32) error {
+	if d.AutoGain {
+		return nil
+	}
+	var usedGain = findNearestGain(gain, d.Gains)
+	var err = d.context.SetTunerGain(int(usedGain * 10.0))
+	if err == nil {
+		d.Gain = usedGain
+	}
+	return err
+}
+
+func (d *Connection) GetFrequencyCorrection() int {
+	return d.PPM
+}
+
+func (d *Connection) SetFrequencyCorrection(ppm int) error {
+	var err = d.context.SetFreqCorrection(ppm)
+	if err != nil {
+		d.PPM = ppm
+	}
+	return err
+}
+
+func (d *Connection) Reset() error {
+	if resetBufferErr := d.context.ResetBuffer(); resetBufferErr != nil {
+		return resetBufferErr
+	}
+	return nil
+}
+
+func (d *Connection) GetCenterFrequency() utils.Hertz {
+	return d.CenterFrequency
+}
+
+func (d *Connection) SetCenterFrequency(centerFrequency utils.Hertz) error {
+	var err = d.context.SetCenterFreq(int(centerFrequency))
+	if err == nil {
+		d.CenterFrequency = centerFrequency
+	}
+	return err
 }

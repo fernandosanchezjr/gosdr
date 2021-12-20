@@ -32,6 +32,7 @@ type Manager struct {
 type DeviceEvent struct {
 	EventType DeviceEventType
 	Id        devices.Id
+	Index     int
 }
 
 func (det DeviceEventType) String() string {
@@ -50,6 +51,7 @@ func (de *DeviceEvent) Fields() log.Fields {
 		"eventType": de.EventType,
 		"type":      de.Id.Type,
 		"serial":    de.Id.Serial,
+		"index":     de.Index,
 	}
 }
 
@@ -98,6 +100,7 @@ func (s *Manager) processDevices(foundDevices []*devices.Info) {
 		s.DeviceChan <- DeviceEvent{
 			EventType: DeviceRemoved,
 			Id:        deviceId,
+			Index:     lostDeviceInfo.Index,
 		}
 		log.WithFields(lostDeviceInfo.Fields()).Println("Lost device")
 	}
@@ -108,6 +111,7 @@ func (s *Manager) processDevices(foundDevices []*devices.Info) {
 		s.DeviceChan <- DeviceEvent{
 			EventType: DeviceAdded,
 			Id:        deviceId,
+			Index:     foundDevice.Index,
 		}
 		log.WithFields(foundDevice.Fields()).Println("Found device")
 	}
