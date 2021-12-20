@@ -23,8 +23,8 @@ func RTLSDRCardBody(th *themes.Theme, enum *widget.Enum, device *rtlsdr.Connecti
 
 func samplingMode(gtx C, th *themes.Theme, enum *widget.Enum) D {
 	return HorizontalList(gtx, 4,
-		layout.Rigid(material.Body1(th.Theme, "Sampling Mode").Layout),
-		layout.Rigid(material.RadioButton(th.Theme, enum, "0", "None").Layout),
+		layout.Rigid(material.Body1(th.Theme, "Direct Sampling Mode").Layout),
+		layout.Rigid(material.RadioButton(th.Theme, enum, "0", "Off").Layout),
 		layout.Rigid(material.RadioButton(th.Theme, enum, "1", "I Branch").Layout),
 		layout.Rigid(material.RadioButton(th.Theme, enum, "2", "Q Branch").Layout),
 	)
