@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/fernandosanchezjr/gosdr/config"
 	"github.com/fernandosanchezjr/gosdr/devices"
 	"github.com/fernandosanchezjr/gosdr/devices/sdr"
 	"github.com/fernandosanchezjr/gosdr/utils"
@@ -8,6 +9,7 @@ import (
 
 func main() {
 	parseFlags()
+	config.SetupLogger()
 	var selectedDevice = make(chan devices.Id, 64)
 	var manager = sdr.NewManager()
 	defer manager.Stop()

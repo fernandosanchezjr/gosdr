@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"github.com/fernandosanchezjr/gosdr/cmd/gosdr/themes"
+	"github.com/fernandosanchezjr/gosdr/config"
 	"github.com/fernandosanchezjr/gosdr/devices/sdr"
 	log "github.com/sirupsen/logrus"
 	"os"
@@ -17,6 +18,7 @@ import (
 
 func main() {
 	flag.Parse()
+	config.SetupLogger()
 	var sdrManager = sdr.NewManager()
 	go func() {
 		w := app.NewWindow(app.Title("GOSDR"))

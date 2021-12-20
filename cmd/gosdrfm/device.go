@@ -1,6 +1,8 @@
 package main
 
 import (
+	"github.com/fernandosanchezjr/gosdr/demod"
+	"github.com/fernandosanchezjr/gosdr/demod/wbfm"
 	"github.com/fernandosanchezjr/gosdr/devices"
 	"github.com/fernandosanchezjr/gosdr/devices/sdr"
 	"github.com/sirupsen/logrus"
@@ -17,13 +19,13 @@ func deviceSelector(events chan sdr.DeviceEvent, deviceIds chan devices.Id) {
 				continue
 			}
 			if deviceSerial != "" && deviceSerial == event.Id.Serial {
-				logrus.WithFields(event.Id.Fields()).Info("Selected device by serial")
+				logrus.WithFields(event.Id.Fields()).Info("Selected")
 				deviceIds <- event.Id
 				continue
 			}
 			if deviceIndex == event.Index {
 				logrus.WithFields(event.Id.Fields()).WithField("index", deviceIndex).Info(
-					"Selected device by index",
+					"Selected",
 				)
 				deviceIds <- event.Id
 				continue
@@ -47,6 +49,7 @@ func deviceController(manager *sdr.Manager, deviceIds chan devices.Id) {
 				logrus.WithFields(id.Fields()).WithError(connErr).Error("manager.Open")
 				continue
 			}
+			logrus.WithFields(conn.Fields()).Info("Opened")
 			if agcErr := conn.SetAGC(agc); agcErr != nil {
 				logrus.WithFields(conn.Fields()).WithError(agcErr).Error("conn.SetAGC")
 				closeConnection(conn)
@@ -72,12 +75,12 @@ func deviceController(manager *sdr.Manager, deviceIds chan devices.Id) {
 				closeConnection(conn)
 				continue
 			}
-			if freqErr := conn.SetCenterFrequency(frequency); freqErr != nil {
-				logrus.WithFields(conn.Fields()).WithError(freqErr).Error("conn.SetCenterFrequency")
+			var demodulator demod.Demodulator = wbfm.NewWBFMDemodulator(frequency)
+			if demodErr := demodulator.UseConnection(conn); demodErr != nil {
+				logrus.WithFields(conn.Fields()).WithError(demodErr).Error("demodulator.UseConnection")
 				closeConnection(conn)
 				continue
 			}
-			logrus.WithFields(conn.Fields()).Info("Opened device")
 		}
 	}
 }
