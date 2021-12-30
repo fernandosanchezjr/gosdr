@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	defaultSampleRate = utils.Hertz(2400000)
+	defaultSampleRate = utils.Sps(2400000)
 	defaultBandwidth  = utils.Hertz(2400000)
 )
 
@@ -19,7 +19,7 @@ type Connection struct {
 	PPM             int
 	CenterFrequency utils.Hertz
 	OffsetTuning    bool
-	SampleRate      utils.Hertz
+	SampleRate      utils.Sps
 	AGCMode         bool
 	AutoGain        bool
 	BiasTee         bool
@@ -70,6 +70,7 @@ func (d *Connection) IsOpen() bool {
 }
 
 func (d *Connection) init() (err error) {
+	d.SetSampleRate(defaultSampleRate)
 	return d.Refresh()
 }
 
@@ -82,7 +83,7 @@ func (d *Connection) Refresh() (err error) {
 	if d.OffsetTuning, err = d.context.GetOffsetTuning(); err != nil {
 		return
 	}
-	d.SampleRate = utils.Hertz(d.context.GetSampleRate())
+	d.SampleRate = utils.Sps(d.context.GetSampleRate())
 	d.Gain = float32(d.context.GetTunerGain()) / 10.0
 	var gains []int
 	if gains, err = d.context.GetTunerGains(); err != nil {
@@ -218,6 +219,18 @@ func (d *Connection) SetCenterFrequency(centerFrequency utils.Hertz) error {
 	var err = d.context.SetCenterFreq(int(centerFrequency))
 	if err == nil {
 		d.CenterFrequency = centerFrequency
+	}
+	return err
+}
+
+func (d *Connection) GetSampleRate() utils.Sps {
+	return d.SampleRate
+}
+
+func (d *Connection) SetSampleRate(sps utils.Sps) error {
+	var err = d.context.SetSampleRate(int(sps))
+	if err == nil {
+		d.SampleRate = sps
 	}
 	return err
 }

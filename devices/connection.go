@@ -22,4 +22,6 @@ type Connection interface {
 	Reset() error
 	GetCenterFrequency() utils.Hertz
 	SetCenterFrequency(centerFrequency utils.Hertz) error
+	GetSampleRate() utils.Sps
+	SetSampleRate(hz utils.Sps) error
 }
