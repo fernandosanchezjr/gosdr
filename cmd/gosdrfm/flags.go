@@ -2,14 +2,14 @@ package main
 
 import (
 	"flag"
-	"github.com/fernandosanchezjr/gosdr/utils"
+	"github.com/fernandosanchezjr/gosdr/units"
 )
 
 var rtlSDR bool
 var deviceIndex int
 var deviceSerial string
 var requestedFrequency = "96.5MHz"
-var frequency utils.Hertz
+var frequency units.Hertz
 var agc bool
 var autoGain bool
 var gain float64 = 1.0
@@ -28,6 +28,6 @@ func init() {
 
 func parseFrequency() error {
 	var frequencyErr error
-	frequency, frequencyErr = utils.ParseHertz(requestedFrequency)
+	frequency, frequencyErr = units.ParseHertz(requestedFrequency)
 	return frequencyErr
 }

@@ -1,7 +1,7 @@
 package devices
 
 import (
-	"github.com/fernandosanchezjr/gosdr/utils"
+	"github.com/fernandosanchezjr/gosdr/units"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -20,8 +20,8 @@ type Connection interface {
 	GetFrequencyCorrection() int
 	SetFrequencyCorrection(ppm int) error
 	Reset() error
-	GetCenterFrequency() utils.Hertz
-	SetCenterFrequency(centerFrequency utils.Hertz) error
-	GetSampleRate() utils.Sps
-	SetSampleRate(hz utils.Sps) error
+	GetCenterFrequency() units.Hertz
+	SetCenterFrequency(centerFrequency units.Hertz) error
+	GetSampleRate() units.Sps
+	SetSampleRate(hz units.Sps) error
 }

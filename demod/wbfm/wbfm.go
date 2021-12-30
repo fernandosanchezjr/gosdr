@@ -2,15 +2,15 @@ package wbfm
 
 import (
 	"github.com/fernandosanchezjr/gosdr/devices"
-	"github.com/fernandosanchezjr/gosdr/utils"
+	"github.com/fernandosanchezjr/gosdr/units"
 )
 
 type WBFMDemodulator struct {
-	Frequency  utils.Hertz
+	Frequency  units.Hertz
 	Connection devices.Connection
 }
 
-func NewWBFMDemodulator(frequency utils.Hertz) *WBFMDemodulator {
+func NewWBFMDemodulator(frequency units.Hertz) *WBFMDemodulator {
 	return &WBFMDemodulator{
 		Frequency: frequency,
 	}
@@ -20,7 +20,7 @@ func (wb *WBFMDemodulator) ConnectionsRequired() int {
 	return 1
 }
 
-func (wb *WBFMDemodulator) CenterFrequency() utils.Hertz {
+func (wb *WBFMDemodulator) CenterFrequency() units.Hertz {
 	return wb.Frequency
 }
 

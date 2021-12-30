@@ -2,14 +2,14 @@ package rtlsdr
 
 import (
 	"github.com/fernandosanchezjr/gosdr/devices"
-	"github.com/fernandosanchezjr/gosdr/utils"
+	"github.com/fernandosanchezjr/gosdr/units"
 	rtl "github.com/jpoirier/gortlsdr"
 	log "github.com/sirupsen/logrus"
 )
 
 const (
-	defaultSampleRate = utils.Sps(2400000)
-	defaultBandwidth  = utils.Hertz(2400000)
+	defaultSampleRate = units.Sps(2400000)
+	defaultBandwidth  = units.Hertz(2400000)
 )
 
 type Connection struct {
@@ -17,18 +17,18 @@ type Connection struct {
 	context         *rtl.Context
 	Mode            rtl.SamplingMode
 	PPM             int
-	CenterFrequency utils.Hertz
+	CenterFrequency units.Hertz
 	OffsetTuning    bool
-	SampleRate      utils.Sps
+	SampleRate      units.Sps
 	AGCMode         bool
 	AutoGain        bool
 	BiasTee         bool
 	Gain            float32
 	Gains           []float32
 	TunerType       string
-	RTLFrequency    utils.Hertz
-	TunerFrequency  utils.Hertz
-	TunerBandwidth  utils.Hertz
+	RTLFrequency    units.Hertz
+	TunerFrequency  units.Hertz
+	TunerBandwidth  units.Hertz
 }
 
 func OpenIndex(index int) (*Connection, error) {
@@ -69,8 +69,10 @@ func (d *Connection) IsOpen() bool {
 	return d.context != nil
 }
 
-func (d *Connection) init() (err error) {
-	d.SetSampleRate(defaultSampleRate)
+func (d *Connection) init() error {
+	if sampleErr := d.SetSampleRate(defaultSampleRate); sampleErr != nil {
+		return sampleErr
+	}
 	return d.Refresh()
 }
 
@@ -79,11 +81,11 @@ func (d *Connection) Refresh() (err error) {
 		return
 	}
 	d.PPM = d.context.GetFreqCorrection()
-	d.CenterFrequency = utils.Hertz(d.context.GetCenterFreq())
+	d.CenterFrequency = units.Hertz(d.context.GetCenterFreq())
 	if d.OffsetTuning, err = d.context.GetOffsetTuning(); err != nil {
 		return
 	}
-	d.SampleRate = utils.Sps(d.context.GetSampleRate())
+	d.SampleRate = units.Sps(d.context.GetSampleRate())
 	d.Gain = float32(d.context.GetTunerGain()) / 10.0
 	var gains []int
 	if gains, err = d.context.GetTunerGains(); err != nil {
@@ -98,8 +100,8 @@ func (d *Connection) Refresh() (err error) {
 	if rtlFrequency, tunerFrequency, err = d.context.GetXtalFreq(); err != nil {
 		return
 	}
-	d.RTLFrequency = utils.Hertz(rtlFrequency)
-	d.TunerFrequency = utils.Hertz(tunerFrequency)
+	d.RTLFrequency = units.Hertz(rtlFrequency)
+	d.TunerFrequency = units.Hertz(tunerFrequency)
 	return
 }
 
@@ -211,11 +213,11 @@ func (d *Connection) Reset() error {
 	return nil
 }
 
-func (d *Connection) GetCenterFrequency() utils.Hertz {
+func (d *Connection) GetCenterFrequency() units.Hertz {
 	return d.CenterFrequency
 }
 
-func (d *Connection) SetCenterFrequency(centerFrequency utils.Hertz) error {
+func (d *Connection) SetCenterFrequency(centerFrequency units.Hertz) error {
 	var err = d.context.SetCenterFreq(int(centerFrequency))
 	if err == nil {
 		d.CenterFrequency = centerFrequency
@@ -223,11 +225,11 @@ func (d *Connection) SetCenterFrequency(centerFrequency utils.Hertz) error {
 	return err
 }
 
-func (d *Connection) GetSampleRate() utils.Sps {
+func (d *Connection) GetSampleRate() units.Sps {
 	return d.SampleRate
 }
 
-func (d *Connection) SetSampleRate(sps utils.Sps) error {
+func (d *Connection) SetSampleRate(sps units.Sps) error {
 	var err = d.context.SetSampleRate(int(sps))
 	if err == nil {
 		d.SampleRate = sps
