@@ -24,4 +24,7 @@ type Connection interface {
 	SetCenterFrequency(centerFrequency units.Hertz) error
 	GetSampleRate() units.Sps
 	SetSampleRate(hz units.Sps) error
+	SampleBufferSize() units.Sps
+	RunSampler(handler func(samples []byte)) error
+	StopSampling() error
 }

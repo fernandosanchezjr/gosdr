@@ -19,12 +19,12 @@ func deviceSelector(events chan sdr.DeviceEvent, deviceIds chan devices.Id) {
 				continue
 			}
 			if deviceSerial != "" && deviceSerial == event.Id.Serial {
-				logrus.WithFields(event.Id.Fields()).Info("Selected")
+				logrus.WithFields(event.Id.Fields()).Trace("Selected device")
 				deviceIds <- event.Id
 				continue
 			}
 			if deviceIndex == event.Index {
-				logrus.WithFields(event.Id.Fields()).WithField("index", deviceIndex).Info(
+				logrus.WithFields(event.Id.Fields()).WithField("index", deviceIndex).Trace(
 					"Selected",
 				)
 				deviceIds <- event.Id
@@ -49,7 +49,6 @@ func deviceController(manager *sdr.Manager, deviceIds chan devices.Id) {
 				logrus.WithFields(id.Fields()).WithError(connErr).Error("manager.Open")
 				continue
 			}
-			logrus.WithFields(conn.Fields()).Info("Opened")
 			if agcErr := conn.SetAGC(agc); agcErr != nil {
 				logrus.WithFields(conn.Fields()).WithError(agcErr).Error("conn.SetAGC")
 				closeConnection(conn)
@@ -81,6 +80,8 @@ func deviceController(manager *sdr.Manager, deviceIds chan devices.Id) {
 				closeConnection(conn)
 				continue
 			}
+			go sampleDevice(conn)
+			logrus.WithFields(conn.Fields()).Info("Started sampling from SDR")
 		}
 	}
 }

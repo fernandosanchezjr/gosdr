@@ -58,5 +58,5 @@ func SetupLogger() {
 			details["output"] = logPath
 		}
 	}
-	logrus.WithFields(details).Info("Logging")
+	logrus.WithFields(details).Trace("Logging configuration")
 }

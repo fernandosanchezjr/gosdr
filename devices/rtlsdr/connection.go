@@ -29,6 +29,7 @@ type Connection struct {
 	RTLFrequency    units.Hertz
 	TunerFrequency  units.Hertz
 	TunerBandwidth  units.Hertz
+	sampling        bool
 }
 
 func OpenIndex(index int) (*Connection, error) {
@@ -57,12 +58,14 @@ func (d *Connection) Close() error {
 	if !d.IsOpen() {
 		return nil
 	}
-	var err = d.context.Close()
-	if err != nil {
-		log.WithError(err).WithFields(d.Info.Fields()).Error("context.Stop()")
+	if samplingErr := d.StopSampling(); samplingErr != nil {
+		log.WithError(samplingErr).WithFields(d.Info.Fields()).Warn("conn.StopSampling()")
+	}
+	if closeErr := d.context.Close(); closeErr != nil {
+		log.WithError(closeErr).WithFields(d.Info.Fields()).Warn("context.Close()")
 	}
 	d.context = nil
-	return err
+	return nil
 }
 
 func (d *Connection) IsOpen() bool {
@@ -235,4 +238,29 @@ func (d *Connection) SetSampleRate(sps units.Sps) error {
 		d.SampleRate = sps
 	}
 	return err
+}
+
+func (d *Connection) SampleBufferSize() units.Sps {
+	return units.Sps(16 * 32 * 512)
+}
+
+func (d *Connection) samplingStarted() {
+	d.sampling = true
+}
+
+func (d *Connection) samplingStopped() {
+	d.sampling = false
+}
+
+func (d *Connection) RunSampler(handler func(samples []byte)) error {
+	d.samplingStarted()
+	defer d.samplingStopped()
+	return d.context.ReadAsync(handler, nil, 0, 0)
+}
+
+func (d *Connection) StopSampling() error {
+	if d.sampling {
+		return d.context.CancelAsync()
+	}
+	return nil
 }

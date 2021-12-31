@@ -102,7 +102,7 @@ func (s *Manager) processDevices(foundDevices []*devices.Info) {
 			Id:        deviceId,
 			Index:     lostDeviceInfo.Index,
 		}
-		log.WithFields(lostDeviceInfo.Fields()).Println("Lost")
+		log.WithFields(lostDeviceInfo.Fields()).Trace("Lost device")
 	}
 	for _, id := range foundDiff.Elements() {
 		var deviceId = id.(devices.Id)
@@ -113,7 +113,7 @@ func (s *Manager) processDevices(foundDevices []*devices.Info) {
 			Id:        deviceId,
 			Index:     foundDevice.Index,
 		}
-		log.WithFields(foundDevice.Fields()).Println("Found")
+		log.WithFields(foundDevice.Fields()).Trace("Found device")
 	}
 }
 
