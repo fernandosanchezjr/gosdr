@@ -1,18 +1,21 @@
 package buffers
 
 type IQ struct {
-	data []complex128
+	Sequence uint64
+	size     int
+	data     []complex64
 }
 
 func NewIQ(size int) *IQ {
 	var buf = &IQ{
-		data: make([]complex128, size),
+		size: size,
+		data: make([]complex64, size),
 	}
 	return buf
 }
 
-func convertByte(u byte) float64 {
-	return (float64(u) - 127.5) / 128.0
+func convertByte(u byte) float32 {
+	return (float32(u) - 127.5) / 128.0
 }
 
 func (buf *IQ) Read(raw []byte) (int, error) {
@@ -24,6 +27,11 @@ func (buf *IQ) Read(raw []byte) (int, error) {
 	return read, nil
 }
 
-func (buf *IQ) Data() []complex128 {
+func (buf *IQ) Data() []complex64 {
 	return buf.data
+}
+
+func (buf *IQ) Copy(source *IQ) {
+	buf.Sequence = source.Sequence
+	copy(buf.data, source.data)
 }

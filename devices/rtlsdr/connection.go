@@ -1,6 +1,7 @@
 package rtlsdr
 
 import (
+	"errors"
 	"github.com/fernandosanchezjr/gosdr/devices"
 	"github.com/fernandosanchezjr/gosdr/units"
 	rtl "github.com/jpoirier/gortlsdr"
@@ -8,8 +9,8 @@ import (
 )
 
 const (
-	defaultSampleRate      = units.Sps(2400256)
-	defaultBandwidth       = units.Hertz(2400256)
+	defaultSampleRate      = units.Sps(2_400_256)
+	defaultBandwidth       = units.Hertz(2_400_256)
 	defaultSampleBlockSize = units.Sps(16 * 32 * 512)
 )
 
@@ -234,9 +235,13 @@ func (d *Connection) GetSampleRate() units.Sps {
 }
 
 func (d *Connection) SetSampleRate(sps units.Sps) error {
+	if sps == 0 || sps%2 != 0 {
+		return errors.New("sample rate must be a non-zero multiple of 2")
+	}
 	var err = d.context.SetSampleRate(int(sps))
 	if err == nil {
 		d.SampleRate = sps
+		err = d.context.SetTunerBw(int(sps))
 	}
 	return err
 }
@@ -264,4 +269,12 @@ func (d *Connection) StopSampling() error {
 		return d.context.CancelAsync()
 	}
 	return nil
+}
+
+func (d *Connection) GetFrequencyBounds() (lower units.Hertz, upper units.Hertz) {
+	var center = d.GetCenterFrequency()
+	var difference = units.Hertz(d.GetSampleRate()) / 2
+	lower = center - difference
+	upper = center + difference
+	return
 }

@@ -7,21 +7,21 @@ type IQRing struct {
 }
 
 func NewIQRing(size, count int) *IQRing {
-	var byteRing = &IQRing{
+	var r = &IQRing{
 		buffers: ring.New(count),
 	}
-	byteRing.init(size)
-	return byteRing
+	r.init(size)
+	return r
 }
 
-func (br *IQRing) init(size int) {
-	for i := 0; i < br.buffers.Len(); i++ {
-		br.buffers.Value = NewIQ(size)
-		br.buffers = br.buffers.Next()
+func (r *IQRing) init(size int) {
+	for i := 0; i < r.buffers.Len(); i++ {
+		r.buffers.Value = NewIQ(size)
+		r.buffers = r.buffers.Next()
 	}
 }
 
-func (br *IQRing) Next() *IQ {
-	br.buffers = br.buffers.Next()
-	return br.buffers.Value.(*IQ)
+func (r *IQRing) Next() *IQ {
+	r.buffers = r.buffers.Next()
+	return r.buffers.Value.(*IQ)
 }

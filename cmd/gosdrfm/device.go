@@ -6,6 +6,10 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+const (
+	graphBufferCount = 16
+)
+
 func deviceSelector(events chan sdr.DeviceEvent, deviceIds chan devices.Id) {
 	for {
 		select {
@@ -67,17 +71,17 @@ func deviceController(manager *sdr.Manager, deviceIds chan devices.Id) {
 				closeConnection(conn)
 				continue
 			}
-			if resetErr := conn.Reset(); resetErr != nil {
-				logrus.WithFields(conn.Fields()).WithError(resetErr).Error("conn.Reset")
-				closeConnection(conn)
-				continue
-			}
 			if freqErr := conn.SetCenterFrequency(frequency - fmOffset); freqErr != nil {
 				logrus.WithFields(conn.Fields()).WithError(freqErr).Error("conn.SetCenterFrequency")
 				closeConnection(conn)
 				continue
 			}
-			var input = createGraph(conn)
+			if resetErr := conn.Reset(); resetErr != nil {
+				logrus.WithFields(conn.Fields()).WithError(resetErr).Error("conn.Reset")
+				closeConnection(conn)
+				continue
+			}
+			var input = createGraph(conn, graphBufferCount)
 			manager.AddDeviceCleanup(id, func() {
 				close(input)
 			})

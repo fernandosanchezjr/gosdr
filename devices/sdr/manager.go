@@ -91,7 +91,8 @@ func (s *Manager) processDevices(foundDevices []*devices.Info) {
 	s.mtx.Lock()
 	defer s.mtx.Unlock()
 	var foundMap = toDeviceMap(foundDevices)
-	var knownSet, foundSet = deviceIdSet(s.knownDevices), deviceIdSet(foundMap)
+	var knownSet = deviceIdSet(s.knownDevices)
+	var foundSet = deviceIdSet(foundMap)
 	var knownDiff = knownSet.Diff(foundSet)
 	var foundDiff = foundSet.Diff(knownSet)
 	for _, id := range knownDiff.Elements() {
@@ -190,13 +191,11 @@ func (s *Manager) Close(id devices.Id) {
 	s.mtx.Lock()
 	defer s.mtx.Unlock()
 	if conn, found := s.connections[id]; found {
-		for _, cleanup := range s.deviceCleanup[id] {
-			cleanup()
-		}
 		if closeErr := conn.Close(); closeErr != nil {
 			log.WithFields(conn.Fields()).WithError(closeErr).Warn("Close")
 		}
 	}
+	s.Cleanup(id)
 	delete(s.connections, id)
 }
 
@@ -208,4 +207,11 @@ func (s *Manager) AddDeviceCleanup(id devices.Id, f func()) {
 	var cleanup = s.deviceCleanup[id]
 	cleanup = append(cleanup, f)
 	s.deviceCleanup[id] = cleanup
+}
+
+func (s *Manager) Cleanup(id devices.Id) {
+	for _, cleanup := range s.deviceCleanup[id] {
+		cleanup()
+	}
+	delete(s.deviceCleanup, id)
 }

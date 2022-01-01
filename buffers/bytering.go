@@ -7,21 +7,21 @@ type ByteRing struct {
 }
 
 func NewByteRing(size, count int) *ByteRing {
-	var byteRing = &ByteRing{
+	var r = &ByteRing{
 		buffers: ring.New(count),
 	}
-	byteRing.init(size)
-	return byteRing
+	r.init(size)
+	return r
 }
 
-func (br *ByteRing) init(size int) {
-	for i := 0; i < br.buffers.Len(); i++ {
-		br.buffers.Value = make([]byte, size)
-		br.buffers = br.buffers.Next()
+func (r *ByteRing) init(size int) {
+	for i := 0; i < r.buffers.Len(); i++ {
+		r.buffers.Value = make([]byte, size)
+		r.buffers = r.buffers.Next()
 	}
 }
 
-func (br *ByteRing) Next() []byte {
-	br.buffers = br.buffers.Next()
-	return br.buffers.Value.([]byte)
+func (r *ByteRing) Next() []byte {
+	r.buffers = r.buffers.Next()
+	return r.buffers.Value.([]byte)
 }

@@ -27,4 +27,5 @@ type Connection interface {
 	SampleBufferSize() units.Sps
 	RunSampler(handler func(samples []byte)) error
 	StopSampling() error
+	GetFrequencyBounds() (lower units.Hertz, upper units.Hertz)
 }

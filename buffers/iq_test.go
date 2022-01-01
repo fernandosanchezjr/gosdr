@@ -5,8 +5,8 @@ import (
 )
 
 func BenchmarkIQ_Read(b *testing.B) {
-	var iq = NewIQ(testSampleSize / 2)
-	var rawBuf = make([]byte, testSampleSize)
+	var iq = NewIQ(testSampleRate / 2)
+	var rawBuf = make([]byte, testSampleRate)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		if _, err := iq.Read(rawBuf); err != nil {
