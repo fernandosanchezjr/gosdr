@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-const testSampleSize = 2400000
+const testSampleSize = 2400256
 const testByteSize = testSampleSize * 2
 
 func TestNewByteRing(t *testing.T) {

@@ -21,12 +21,13 @@ const scanInterval = time.Second * 1
 const deviceEventBufferSize = 64
 
 type Manager struct {
-	mtx          sync.Mutex
-	wg           sync.WaitGroup
-	quitChan     chan struct{}
-	DeviceChan   chan DeviceEvent
-	knownDevices map[devices.Id]*devices.Info
-	connections  map[devices.Id]devices.Connection
+	mtx           sync.Mutex
+	wg            sync.WaitGroup
+	quitChan      chan struct{}
+	DeviceChan    chan DeviceEvent
+	knownDevices  map[devices.Id]*devices.Info
+	connections   map[devices.Id]devices.Connection
+	deviceCleanup map[devices.Id][]func()
 }
 
 type DeviceEvent struct {
@@ -57,10 +58,11 @@ func (de *DeviceEvent) Fields() log.Fields {
 
 func NewManager() *Manager {
 	var scanner = &Manager{
-		quitChan:     make(chan struct{}),
-		DeviceChan:   make(chan DeviceEvent, deviceEventBufferSize),
-		knownDevices: make(map[devices.Id]*devices.Info),
-		connections:  make(map[devices.Id]devices.Connection),
+		quitChan:      make(chan struct{}),
+		DeviceChan:    make(chan DeviceEvent, deviceEventBufferSize),
+		knownDevices:  make(map[devices.Id]*devices.Info),
+		connections:   make(map[devices.Id]devices.Connection),
+		deviceCleanup: make(map[devices.Id][]func()),
 	}
 	scanner.wg.Add(1)
 	go scanner.loop()
@@ -188,6 +190,9 @@ func (s *Manager) Close(id devices.Id) {
 	s.mtx.Lock()
 	defer s.mtx.Unlock()
 	if conn, found := s.connections[id]; found {
+		for _, cleanup := range s.deviceCleanup[id] {
+			cleanup()
+		}
 		if closeErr := conn.Close(); closeErr != nil {
 			log.WithFields(conn.Fields()).WithError(closeErr).Warn("Close")
 		}
@@ -197,4 +202,10 @@ func (s *Manager) Close(id devices.Id) {
 
 func (s *Manager) CloseAsync(id devices.Id) {
 	go s.Close(id)
+}
+
+func (s *Manager) AddDeviceCleanup(id devices.Id, f func()) {
+	var cleanup = s.deviceCleanup[id]
+	cleanup = append(cleanup, f)
+	s.deviceCleanup[id] = cleanup
 }

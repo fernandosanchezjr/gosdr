@@ -1,8 +1,6 @@
 package main
 
 import (
-	"github.com/fernandosanchezjr/gosdr/demod"
-	"github.com/fernandosanchezjr/gosdr/demod/wbfm"
 	"github.com/fernandosanchezjr/gosdr/devices"
 	"github.com/fernandosanchezjr/gosdr/devices/sdr"
 	"github.com/sirupsen/logrus"
@@ -74,14 +72,17 @@ func deviceController(manager *sdr.Manager, deviceIds chan devices.Id) {
 				closeConnection(conn)
 				continue
 			}
-			var demodulator demod.Demodulator = wbfm.NewWBFMDemodulator(frequency)
-			if demodErr := demodulator.UseConnection(conn); demodErr != nil {
-				logrus.WithFields(conn.Fields()).WithError(demodErr).Error("demodulator.UseConnection")
+			if freqErr := conn.SetCenterFrequency(frequency - fmOffset); freqErr != nil {
+				logrus.WithFields(conn.Fields()).WithError(freqErr).Error("conn.SetCenterFrequency")
 				closeConnection(conn)
 				continue
 			}
-			go sampleDevice(conn)
-			logrus.WithFields(conn.Fields()).Info("Started sampling from SDR")
+			var input = createGraph(conn)
+			manager.AddDeviceCleanup(id, func() {
+				close(input)
+			})
+			go sampleDevice(conn, input)
+			logrus.WithFields(conn.Fields()).Info("Sampling SDR")
 		}
 	}
 }

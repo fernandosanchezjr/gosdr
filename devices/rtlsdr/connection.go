@@ -8,8 +8,9 @@ import (
 )
 
 const (
-	defaultSampleRate = units.Sps(2400000)
-	defaultBandwidth  = units.Hertz(2400000)
+	defaultSampleRate      = units.Sps(2400256)
+	defaultBandwidth       = units.Hertz(2400256)
+	defaultSampleBlockSize = units.Sps(16 * 32 * 512)
 )
 
 type Connection struct {
@@ -241,7 +242,7 @@ func (d *Connection) SetSampleRate(sps units.Sps) error {
 }
 
 func (d *Connection) SampleBufferSize() units.Sps {
-	return units.Sps(16 * 32 * 512)
+	return defaultSampleBlockSize
 }
 
 func (d *Connection) samplingStarted() {

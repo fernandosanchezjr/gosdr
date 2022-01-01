@@ -39,7 +39,11 @@ func exitHandler() {
 
 func SetupLogger() {
 	var err error
-	logrus.SetFormatter(&logrus.TextFormatter{ForceColors: true, FullTimestamp: true})
+	logrus.SetFormatter(&logrus.TextFormatter{
+		ForceColors:     true,
+		FullTimestamp:   true,
+		TimestampFormat: "2006-01-02T15:04:05.000-0800",
+	})
 	logrus.RegisterExitHandler(exitHandler)
 	if logLevel, err = logrus.ParseLevel(logLevelStr); err != nil {
 		logrus.WithField("log-level", logLevelStr).Error("Invalid")
