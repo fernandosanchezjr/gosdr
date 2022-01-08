@@ -16,6 +16,7 @@ import (
 	chart "github.com/wcharczuk/go-chart/v2"
 	"image"
 	"math"
+	"runtime"
 )
 
 func getFrequencies(steps int, lower, upper units.Hertz) []float64 {
@@ -71,14 +72,16 @@ func iqHistogramLoop(
 	input chan *buffers.IQ,
 	output chan *bytes.Buffer,
 ) {
+	log.WithField("filter", "IQHistogram").Debug("Starting")
 	var log10 = 10.0 * math.Log10(10.0)
 	var histogram = make([]float64, len(frequencies))
 	for {
 		select {
 		case in, ok := <-input:
 			if !ok {
-				log.WithField("filter", "IQHistogram").Trace("Exiting")
 				window.Close()
+				log.WithField("filter", "IQHistogram").Debug("Exiting")
+				runtime.GC()
 				return
 			}
 			var out = ring.Next()

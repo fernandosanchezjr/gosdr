@@ -6,6 +6,7 @@ import (
 	"github.com/fernandosanchezjr/gosdr/devices/rtlsdr"
 	log "github.com/sirupsen/logrus"
 	"github.com/zoumo/goset"
+	"runtime"
 	"sync"
 	"time"
 )
@@ -105,7 +106,8 @@ func (s *Manager) processDevices(foundDevices []*devices.Info) {
 			Id:        deviceId,
 			Index:     lostDeviceInfo.Index,
 		}
-		log.WithFields(lostDeviceInfo.Fields()).Trace("Lost device")
+		log.WithFields(lostDeviceInfo.Fields()).Debug("Lost device")
+		runtime.GC()
 	}
 	for _, id := range foundDiff.Elements() {
 		var deviceId = id.(devices.Id)
@@ -116,7 +118,7 @@ func (s *Manager) processDevices(foundDevices []*devices.Info) {
 			Id:        deviceId,
 			Index:     foundDevice.Index,
 		}
-		log.WithFields(foundDevice.Fields()).Trace("Found device")
+		log.WithFields(foundDevice.Fields()).Debug("Found device")
 	}
 }
 

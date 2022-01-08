@@ -12,6 +12,7 @@ const (
 	defaultSampleRate      = units.Sps(2_400_256)
 	defaultBandwidth       = units.Hertz(2_400_256)
 	defaultSampleBlockSize = units.Sps(16 * 32 * 512)
+	sampleModulus          = 512
 )
 
 type Connection struct {
@@ -234,7 +235,8 @@ func (d *Connection) GetSampleRate() units.Sps {
 	return d.SampleRate
 }
 
-func (d *Connection) SetSampleRate(sps units.Sps) error {
+func (d *Connection) SetSampleRate(sampleRate units.Sps) error {
+	var sps = sampleRate.NearestSize(sampleModulus)
 	if sps == 0 || sps%2 != 0 {
 		return errors.New("sample rate must be a non-zero multiple of 2")
 	}

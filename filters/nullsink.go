@@ -16,6 +16,10 @@ func NewNullSink(iqInput chan *buffers.IQ, floatInput chan []float64) {
 
 func nullSinkLoop(iqInput chan *buffers.IQ, floatInput chan []float64) {
 	var id = atomic.AddUint64(&nullSinkId, 1)
+	log.WithFields(log.Fields{
+		"filter": "NullSink",
+		"id":     id,
+	}).Debug("Starting")
 	for {
 		select {
 		case in, ok := <-iqInput:
@@ -23,7 +27,7 @@ func nullSinkLoop(iqInput chan *buffers.IQ, floatInput chan []float64) {
 				log.WithFields(log.Fields{
 					"filter": "NullSink",
 					"id":     id,
-				}).Trace("Exiting")
+				}).Debug("Exiting")
 				return
 			}
 			log.WithFields(log.Fields{
@@ -44,7 +48,7 @@ func nullSinkLoop(iqInput chan *buffers.IQ, floatInput chan []float64) {
 				"filter": "NullSink",
 				"id":     id,
 				"type":   "Float",
-			}).Trace("Sample received")
+			}).Debug("Sample received")
 		}
 	}
 }

@@ -3,6 +3,7 @@ package filters
 import (
 	"github.com/fernandosanchezjr/gosdr/buffers"
 	log "github.com/sirupsen/logrus"
+	"runtime"
 )
 
 type iqMultiplexerDestination struct {
@@ -30,6 +31,7 @@ func iqMultiplexerLoop(
 	input chan *buffers.IQ,
 	outputs []*iqMultiplexerDestination,
 ) {
+	log.WithField("filter", "IQMultiplexer").Debug("Starting")
 	for {
 		select {
 		case in, ok := <-input:
@@ -37,7 +39,9 @@ func iqMultiplexerLoop(
 				for _, destination := range outputs {
 					close(destination.output)
 				}
-				log.WithField("filter", "IQMultiplexer").Trace("Exiting")
+				outputs = nil
+				log.WithField("filter", "IQMultiplexer").Debug("Exiting")
+				runtime.GC()
 				return
 			}
 			for _, destination := range outputs {

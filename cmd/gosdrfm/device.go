@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	graphBufferCount = 16
+	graphBufferCount = 8
 )
 
 func deviceSelector(events chan sdr.DeviceEvent, deviceIds chan devices.Id) {

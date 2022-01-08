@@ -4,6 +4,7 @@ type IQ struct {
 	Sequence uint64
 	size     int
 	data     []complex64
+	pos      int
 }
 
 func NewIQ(size int) *IQ {
@@ -20,9 +21,10 @@ func convertByte(u byte) float32 {
 
 func (buf *IQ) Read(raw []byte) (int, error) {
 	var read int
-	for pos := range buf.data {
-		buf.data[pos] = complex(convertByte(raw[read]), convertByte(raw[read+1]))
+	for read < len(raw) && buf.pos < buf.size {
+		buf.data[buf.pos] = complex(convertByte(raw[read]), convertByte(raw[read+1]))
 		read += 2
+		buf.pos += 1
 	}
 	return read, nil
 }
@@ -34,4 +36,12 @@ func (buf *IQ) Data() []complex64 {
 func (buf *IQ) Copy(source *IQ) {
 	buf.Sequence = source.Sequence
 	copy(buf.data, source.data)
+}
+
+func (buf *IQ) Full() bool {
+	return buf.size == buf.pos
+}
+
+func (buf *IQ) Reset() {
+	buf.pos = 0
 }

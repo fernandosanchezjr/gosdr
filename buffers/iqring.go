@@ -23,5 +23,7 @@ func (r *IQRing) init(size int) {
 
 func (r *IQRing) Next() *IQ {
 	r.buffers = r.buffers.Next()
-	return r.buffers.Value.(*IQ)
+	var value = r.buffers.Value.(*IQ)
+	value.Reset()
+	return value
 }

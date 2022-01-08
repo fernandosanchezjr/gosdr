@@ -3,6 +3,7 @@ package filters
 import (
 	"github.com/fernandosanchezjr/gosdr/buffers"
 	log "github.com/sirupsen/logrus"
+	"runtime"
 )
 
 func NewIQSampler(sampleRate int, bufferCount int) (int, chan []byte, chan *buffers.IQ) {
@@ -15,26 +16,34 @@ func NewIQSampler(sampleRate int, bufferCount int) (int, chan []byte, chan *buff
 }
 
 func iqSamplerLoop(rawSampleRate int, ring *buffers.IQRing, input chan []byte, output chan *buffers.IQ) {
+	log.WithField("filter", "IQSampler").Debug("Starting")
 	var sequence uint64
+	var out = ring.Next()
+	var readOffset int
 	for {
 		select {
 		case raw, ok := <-input:
 			if !ok {
 				close(output)
-				log.WithField("filter", "IQSampler").Trace("Exiting")
+				log.WithField("filter", "IQSampler").Debug("Exiting")
+				runtime.GC()
 				return
 			}
+			readOffset = 0
 			for {
-				var out = ring.Next()
-				var read, err = out.Read(raw)
-				if err != nil {
-					log.WithField("filter", "IQSampler").WithError(err).Error("buf.Read")
+				var read, readErr = out.Read(raw[readOffset:])
+				readOffset += read
+				if readErr != nil {
+					log.WithField("filter", "IQSampler").WithError(readErr).Error("buf.Read")
 					break
 				}
-				sequence += 1
-				out.Sequence = sequence
-				output <- out
-				if read == rawSampleRate {
+				if out.Full() {
+					out.Sequence = sequence
+					output <- out
+					sequence += 1
+					out = ring.Next()
+				}
+				if readOffset == len(raw) {
 					break
 				}
 			}

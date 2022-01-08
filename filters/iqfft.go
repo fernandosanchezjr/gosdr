@@ -4,6 +4,7 @@ import (
 	"github.com/fernandosanchezjr/gosdr/buffers"
 	"github.com/racerxdl/segdsp/dsp/fft"
 	log "github.com/sirupsen/logrus"
+	"runtime"
 )
 
 func NewIQFFT(sampleRate int, bufferCount int, input chan *buffers.IQ) chan *buffers.IQ {
@@ -20,6 +21,7 @@ func computeFFT(midPoint int, input []complex64, output []complex64) {
 }
 
 func iqFFTLoop(outputRing *buffers.IQRing, size int, input chan *buffers.IQ, output chan *buffers.IQ) {
+	log.WithField("filter", "IQFFT").Debug("Starting")
 	var midPoint = size / 2
 	var tmp = buffers.NewIQ(size)
 	for {
@@ -27,7 +29,8 @@ func iqFFTLoop(outputRing *buffers.IQRing, size int, input chan *buffers.IQ, out
 		case in, ok := <-input:
 			if !ok {
 				close(output)
-				log.WithField("filter", "IQFFT").Trace("Exiting")
+				log.WithField("filter", "IQFFT").Debug("Exiting")
+				runtime.GC()
 				return
 			}
 			var out = outputRing.Next()

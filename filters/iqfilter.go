@@ -3,6 +3,7 @@ package filters
 import (
 	"github.com/fernandosanchezjr/gosdr/buffers"
 	log "github.com/sirupsen/logrus"
+	"runtime"
 )
 
 func NewIQFilter(
@@ -23,12 +24,14 @@ func iqFilterLoop(
 	input chan *buffers.IQ,
 	output chan *buffers.IQ,
 ) {
+	log.WithField("filter", "Decimator").Debug("Starting")
 	for {
 		select {
 		case in, ok := <-input:
 			if !ok {
 				close(output)
-				log.WithField("filter", "Decimator").Trace("Exiting")
+				log.WithField("filter", "Decimator").Debug("Exiting")
+				runtime.GC()
 				return
 			}
 			var out = outputRing.Next()
