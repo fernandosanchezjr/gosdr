@@ -8,7 +8,6 @@ require (
 	github.com/dustin/go-humanize v0.0.0-20171111073723-bb3d318650d4
 	github.com/jpoirier/gortlsdr v2.10.0+incompatible
 	github.com/kirsle/configdir v0.0.0-20170128060238-e45d2f54772f
-	github.com/mjibson/go-dsp v0.0.0-20180508042940-11479a337f12
 	github.com/racerxdl/segdsp v0.0.0-20190825170906-a855d00a24a8
 	github.com/sirupsen/logrus v1.8.1
 	github.com/wcharczuk/go-chart/v2 v2.1.0
