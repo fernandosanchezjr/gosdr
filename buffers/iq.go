@@ -16,13 +16,14 @@ func NewIQ(size int) *IQ {
 }
 
 func convertByte(u byte) float32 {
-	return (float32(u) - 127.5) / 128.0
+	return (float32(u) - 127.4) / 128
 }
 
 func (buf *IQ) Read(raw []byte) (int, error) {
 	var read int
 	for read < len(raw) && buf.pos < buf.size {
-		buf.data[buf.pos] = complex(convertByte(raw[read]), convertByte(raw[read+1]))
+		var sample = complex(convertByte(raw[read]), convertByte(raw[read+1]))
+		buf.data[buf.pos] = sample
 		read += 2
 		buf.pos += 1
 	}

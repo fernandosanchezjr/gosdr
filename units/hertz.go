@@ -21,6 +21,7 @@ func ParseHertz(value string) (Hertz, error) {
 }
 
 func (h Hertz) Float() float64 {
-	var value, _ = humanize.ComputeSI(float64(h))
-	return value
+	//var value, _ = humanize.ComputeSI(float64(h))
+	//return value
+	return float64(h)
 }

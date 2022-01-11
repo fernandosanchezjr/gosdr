@@ -1,22 +1,29 @@
 package main
 
 import (
-	"github.com/fernandosanchezjr/gosdr/buffers"
 	"github.com/fernandosanchezjr/gosdr/devices"
 	"github.com/fernandosanchezjr/gosdr/filters"
 	"github.com/fernandosanchezjr/gosdr/units"
 )
 
-const iqSampleRate = units.Sps(1200128)
-
 func createGraph(conn devices.Connection, bufferCount int) chan []byte {
-	var iqSampleRate, iqSamplerInput, iqSamplerOutput = filters.NewIQSampler(int(iqSampleRate), bufferCount)
-	var multiplexer = make([]chan *buffers.IQ, 4)
-	for i := 0; i < 4; i++ {
-		var output = make(chan *buffers.IQ, bufferCount)
-		multiplexer[i] = output
-		filters.NewNullSink(output, nil)
-	}
-	filters.NewIQMultiplexer(iqSampleRate, bufferCount, iqSamplerOutput, multiplexer...)
+	var iqSampleRate, iqSamplerInput, iqSamplerOutput = filters.NewIQSampler(int(conn.GetSampleRate()), bufferCount)
+	var resampleRate, resamplerOutput = filters.NewIQRationalResampler(
+		iqSampleRate,
+		bufferCount,
+		2,
+		16,
+		iqSamplerOutput,
+	)
+	var filterOutput = filters.NewIQLowpassFilter(
+		resampleRate,
+		bufferCount,
+		1.0,
+		50_000,
+		1000,
+		resamplerOutput,
+	)
+	var fftOutput = filters.NewIQFFT(resampleRate, bufferCount, filterOutput)
+	filters.NewIQHistogram(resampleRate, bufferCount, conn, units.Hertz(resampleRate), fftOutput)
 	return iqSamplerInput
 }

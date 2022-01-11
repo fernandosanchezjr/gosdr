@@ -30,38 +30,42 @@ func getFrequencies(steps int, lower, upper units.Hertz) []float64 {
 	return frequencies
 }
 
-func NewIQHistogram(sampleRate int, count int, conn devices.Connection, input chan *buffers.IQ) {
-	var output = make(chan *bytes.Buffer, count)
+func NewIQHistogram(
+	sampleRate int,
+	bufferCount int,
+	conn devices.Connection,
+	bandwidth units.Hertz,
+	input chan *buffers.IQ,
+) {
+	var output = make(chan *bytes.Buffer, bufferCount)
 	var window = app.NewWindow(app.Title("GOSDR IQ Histogram"))
-	var lower, upper = conn.GetFrequencyBounds()
-	var ring = buffers.NewIQRing(sampleRate, count)
-	var bufferRing = buffers.NewBufferRing(count)
+	var ring = buffers.NewIQRing(sampleRate, bufferCount)
+	var bufferRing = buffers.NewBufferRing(bufferCount)
+	var center = conn.GetCenterFrequency()
+	var lower = center - (bandwidth / 2)
+	var upper = lower + bandwidth
 	var histogramFrequencies = getFrequencies(sampleRate, lower, upper)
 	go iqHistogramLoop(window, histogramFrequencies, ring, bufferRing, input, output)
 	go iqHistogramWindowLoop(window, output)
 }
 
-func histogramNormalize(value float64, max float64, log10 float64) (normalized float64) {
-	if value == 0.0 {
+func calculatePower(sample complex64) float64 {
+	var power = 10.0 * math.Log10(float64(tools.ComplexAbsSquared(sample)))
+	if math.IsInf(power, 0) || math.IsNaN(power) {
 		return 0.0
 	}
-	normalized = log10 * (value / max)
-	if math.IsNaN(normalized) {
-		return 0.0
-	}
-	return
+	return power
 }
 
-func histogramIQtoFloat(log10 float64, input []complex64, histogram []float64) {
-	var magnitude, maxMagnitude float64
+func histogramIQtoFloat(input []complex64, histogram []float64) (min float64, max float64) {
+	var power float64
 	for i, value := range input {
-		magnitude = float64(tools.ComplexAbs(value))
-		histogram[i] = magnitude
-		maxMagnitude = math.Max(maxMagnitude, magnitude)
+		power = calculatePower(value)
+		histogram[i] = power
+		min = math.Min(min, power)
+		max = math.Max(max, power)
 	}
-	for i, value := range histogram {
-		histogram[i] = histogramNormalize(value, maxMagnitude, log10)
-	}
+	return
 }
 
 func iqHistogramLoop(
@@ -73,20 +77,19 @@ func iqHistogramLoop(
 	output chan *bytes.Buffer,
 ) {
 	log.WithField("filter", "IQHistogram").Debug("Starting")
-	var log10 = 10.0 * math.Log10(10.0)
 	var histogram = make([]float64, len(frequencies))
 	for {
 		select {
 		case in, ok := <-input:
 			if !ok {
-				window.Close()
+				close(output)
 				log.WithField("filter", "IQHistogram").Debug("Exiting")
 				runtime.GC()
 				return
 			}
 			var out = ring.Next()
 			out.Copy(in)
-			histogramIQtoFloat(log10, out.Data(), histogram)
+			var min, max = histogramIQtoFloat(out.Data(), histogram)
 			var outBuf = bufferRing.Next()
 			graph := chart.Chart{
 				Series: []chart.Series{
@@ -94,6 +97,23 @@ func iqHistogramLoop(
 						XValues: frequencies,
 						YValues: histogram,
 					},
+				},
+				YAxis: chart.YAxis{
+					Name:      "",
+					NameStyle: chart.Style{},
+					Style:     chart.Style{},
+					Zero:      chart.GridLine{},
+					AxisType:  0,
+					Ascending: false,
+					Range: &chart.ContinuousRange{
+						Min:        min,
+						Max:        max,
+						Domain:     len(histogram),
+						Descending: false,
+					},
+					TickStyle:      chart.Style{},
+					GridMajorStyle: chart.Style{},
+					GridMinorStyle: chart.Style{},
 				},
 			}
 			if renderErr := graph.Render(chart.PNG, outBuf); renderErr != nil {
@@ -111,7 +131,11 @@ func iqHistogramWindowLoop(window *app.Window, input chan *bytes.Buffer) {
 	var ops op.Ops
 	for {
 		select {
-		case in := <-input:
+		case in, ok := <-input:
+			if !ok {
+				window.Close()
+				continue
+			}
 			chartImage, _, decodeErr = image.Decode(in)
 			if decodeErr != nil {
 				log.WithError(decodeErr).Error("image.Decode")

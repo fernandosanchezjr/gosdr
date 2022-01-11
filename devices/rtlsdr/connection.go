@@ -12,7 +12,7 @@ const (
 	defaultSampleRate      = units.Sps(2_400_256)
 	defaultBandwidth       = units.Hertz(2_400_256)
 	defaultSampleBlockSize = units.Sps(16 * 32 * 512)
-	sampleModulus          = 512
+	sampleModulus          = 1024
 )
 
 type Connection struct {

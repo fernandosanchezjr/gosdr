@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	graphBufferCount = 8
+	graphBufferCount = 4
 )
 
 func deviceSelector(events chan sdr.DeviceEvent, deviceIds chan devices.Id) {
@@ -71,7 +71,7 @@ func deviceController(manager *sdr.Manager, deviceIds chan devices.Id) {
 				closeConnection(conn)
 				continue
 			}
-			if freqErr := conn.SetCenterFrequency(frequency - fmOffset); freqErr != nil {
+			if freqErr := conn.SetCenterFrequency(frequency); freqErr != nil {
 				logrus.WithFields(conn.Fields()).WithError(freqErr).Error("conn.SetCenterFrequency")
 				closeConnection(conn)
 				continue
