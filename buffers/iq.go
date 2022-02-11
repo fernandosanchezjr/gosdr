@@ -1,5 +1,10 @@
 package buffers
 
+import (
+	"errors"
+	"github.com/fernandosanchezjr/gosdr/utils"
+)
+
 type IQ struct {
 	Sequence uint64
 	size     int
@@ -45,4 +50,14 @@ func (buf *IQ) Full() bool {
 
 func (buf *IQ) Reset() {
 	buf.pos = 0
+}
+
+func (buf *IQ) Write(out []complex64) (int, error) {
+	if buf.Full() {
+		return 0, errors.New("end of buffer")
+	}
+	var copyLen = utils.MinInt(len(out), buf.size-buf.pos)
+	copy(out, buf.data[buf.pos:])
+	buf.pos += copyLen
+	return copyLen, nil
 }

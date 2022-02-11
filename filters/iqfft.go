@@ -11,8 +11,8 @@ import (
 func NewIQFFT(fftSize int, sampleRate int, bufferCount int, input chan *buffers.IQ) chan *buffers.IQ {
 	var output = make(chan *buffers.IQ, bufferCount)
 	var window = dsp.BlackmanHarris(fftSize, 92)
-	var outputRing = buffers.NewIQRing(fftSize, bufferCount)
-	go iqFFTLoop(fftSize, window, outputRing, input, output)
+	var outputRing = buffers.NewIQRing(fftSize, sampleRate/fftSize)
+	go iqFFTLoop(fftSize, sampleRate, window, outputRing, input, output)
 	log.WithFields(log.Fields{
 		"sampleRate": sampleRate,
 	}).Debug("IQFFT")
@@ -27,6 +27,7 @@ func computeFFT(midPoint int, input []complex64, output []complex64) {
 
 func iqFFTLoop(
 	fftSize int,
+	sampleRate int,
 	window []float64,
 	outputRing *buffers.IQRing,
 	input chan *buffers.IQ,
@@ -35,6 +36,7 @@ func iqFFTLoop(
 	log.WithField("filter", "IQFFT").Debug("Starting")
 	var midPoint = (fftSize / 2) + (fftSize % 2)
 	var fftBuf = make([]complex64, fftSize)
+	var currentIQ = buffers.NewIQ(sampleRate)
 	for {
 		select {
 		case in, ok := <-input:
@@ -44,12 +46,15 @@ func iqFFTLoop(
 				runtime.GC()
 				return
 			}
-			var inSequence = in.Sequence
-			copy(fftBuf, in.Data())
-			var out = outputRing.Next()
+			currentIQ.Copy(in)
+			currentIQ.Reset()
+		default:
+		}
+		if _, err := currentIQ.Write(fftBuf); err == nil {
 			computeWindow(fftBuf, window)
+			var out = outputRing.Next()
 			computeFFT(midPoint, fftBuf, out.Data())
-			out.Sequence = inSequence
+			out.Sequence = currentIQ.Sequence
 			output <- out
 		}
 	}
