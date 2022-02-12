@@ -30,9 +30,10 @@ INFO[2022-01-18T22:34:18.183-0800] Received device event                        
 ### GOSDRFM
 
 * Automatic RTL-SDR device management
-* FM signal histogram - now slightly less wonky than before
+* FM signal histogram - now even less wonky than before
+  * WIP conversion to pure GIO 
 
-![RTL-SDR Detector](images/wip/gosdrfm.gif)
+![GOSDR IQ Histogram](images/wip/gosdrfm.gif)
 
 ```
 $ gosdrfm -?

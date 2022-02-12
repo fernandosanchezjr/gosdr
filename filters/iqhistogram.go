@@ -45,7 +45,7 @@ func NewIQHistogram(
 	var lower = center - (bandwidth / 2)
 	var upper = lower + bandwidth
 	var histogramFrequencies = getFrequencies(sampleRate, lower, upper)
-	go iqHistogramLoop(window, histogramFrequencies, ring, bufferRing, input, output)
+	go iqHistogramLoop(histogramFrequencies, ring, bufferRing, input, output)
 	go iqHistogramWindowLoop(window, output)
 }
 
@@ -57,19 +57,13 @@ func calculatePower(sample complex64) float64 {
 	return power
 }
 
-func histogramIQtoFloat(input []complex64, histogram []float64) (min float64, max float64) {
-	var power float64
+func histogramIQtoFloat(input []complex64, histogram []float64) {
 	for i, value := range input {
-		power = calculatePower(value)
-		histogram[i] = power
-		min = math.Min(min, power)
-		max = math.Max(max, power)
+		histogram[i] = calculatePower(value)
 	}
-	return
 }
 
 func iqHistogramLoop(
-	window *app.Window,
 	frequencies []float64,
 	ring *buffers.IQRing,
 	bufferRing *buffers.BufferRing,
@@ -89,7 +83,7 @@ func iqHistogramLoop(
 			}
 			var out = ring.Next()
 			out.Copy(in)
-			var min, max = histogramIQtoFloat(out.Data(), histogram)
+			histogramIQtoFloat(out.Data(), histogram)
 			var outBuf = bufferRing.Next()
 			graph := chart.Chart{
 				Series: []chart.Series{
@@ -106,8 +100,8 @@ func iqHistogramLoop(
 					AxisType:  0,
 					Ascending: false,
 					Range: &chart.ContinuousRange{
-						Min:        min,
-						Max:        max,
+						Min:        -160,
+						Max:        60,
 						Domain:     len(histogram),
 						Descending: false,
 					},
