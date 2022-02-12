@@ -3,7 +3,7 @@ module github.com/fernandosanchezjr/gosdr
 go 1.17
 
 require (
-	gioui.org v0.0.0-20211202105001-872b4ba41be0
+	gioui.org v0.0.0-20220211124213-9e23412a0194
 	gioui.org/x v0.0.0-20211201170442-0eb3fcddb9ec
 	github.com/dustin/go-humanize v0.0.0-20171111073723-bb3d318650d4
 	github.com/jpoirier/gortlsdr v2.10.0+incompatible

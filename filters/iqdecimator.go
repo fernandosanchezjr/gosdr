@@ -15,7 +15,7 @@ func NewIQDecimator(
 ) (int, chan *buffers.IQ) {
 	var decimator = dsp.MakeDecimator(decimation)
 	var resampleRate = decimator.PredictOutputSize(sampleRate)
-	var outputRing = buffers.NewIQRing(resampleRate, bufferCount)
+	var outputRing = buffers.NewIQRing(resampleRate, bufferCount-1)
 	var output = make(chan *buffers.IQ, bufferCount)
 	go iqDecimatorLoop(sampleRate, decimator, outputRing, input, output)
 	log.WithFields(log.Fields{

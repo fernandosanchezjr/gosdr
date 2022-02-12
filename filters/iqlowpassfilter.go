@@ -14,11 +14,12 @@ func NewIQLowpassFilter(
 	cutFrequency float64,
 	transitionWidth float64,
 	input chan *buffers.IQ,
+	quit chan struct{},
 ) chan *buffers.IQ {
 	var filter = dsp.MakeFirFilter(dsp.MakeLowPass(gain, float64(sampleRate), cutFrequency, transitionWidth))
 	var outputRing = buffers.NewIQRing(sampleRate, bufferCount)
-	var output = make(chan *buffers.IQ, bufferCount)
-	go iqLowpassFilterLoop(sampleRate, filter, outputRing, input, output)
+	var output = make(chan *buffers.IQ, bufferCount-1)
+	go iqLowpassFilterLoop(sampleRate, filter, outputRing, input, output, quit)
 	log.WithFields(log.Fields{
 		"sampleRate": sampleRate,
 	}).Debug("IQLowpassFilter")
@@ -31,11 +32,17 @@ func iqLowpassFilterLoop(
 	outputRing *buffers.IQRing,
 	input chan *buffers.IQ,
 	output chan *buffers.IQ,
+	quit chan struct{},
 ) {
 	log.WithField("filter", "IQLowpassFilter").Debug("Starting")
 	var tmpBuffer = buffers.NewIQ(sampleRate)
 	for {
 		select {
+		case <-quit:
+			close(output)
+			log.WithField("filter", "IQLowpassFilter").Debug("Exiting")
+			runtime.GC()
+			return
 		case in, ok := <-input:
 			if !ok {
 				close(output)

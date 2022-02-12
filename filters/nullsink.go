@@ -8,13 +8,13 @@ import (
 
 var nullSinkId uint64
 
-func NewNullSink(iqInput chan *buffers.IQ, floatInput chan []float64) {
+func NewNullSink(iqInput chan *buffers.IQ, floatInput chan []float64, quit chan struct{}) {
 	if iqInput != nil {
-		go nullSinkLoop(iqInput, floatInput)
+		go nullSinkLoop(iqInput, floatInput, quit)
 	}
 }
 
-func nullSinkLoop(iqInput chan *buffers.IQ, floatInput chan []float64) {
+func nullSinkLoop(iqInput chan *buffers.IQ, floatInput chan []float64, quit chan struct{}) {
 	var id = atomic.AddUint64(&nullSinkId, 1)
 	log.WithFields(log.Fields{
 		"filter": "NullSink",
@@ -22,6 +22,12 @@ func nullSinkLoop(iqInput chan *buffers.IQ, floatInput chan []float64) {
 	}).Debug("Starting")
 	for {
 		select {
+		case <-quit:
+			log.WithFields(log.Fields{
+				"filter": "NullSink",
+				"id":     id,
+			}).Debug("Exiting")
+			return
 		case in, ok := <-iqInput:
 			if !ok {
 				log.WithFields(log.Fields{

@@ -36,17 +36,17 @@ func NewIQHistogram(
 	conn devices.Connection,
 	bandwidth units.Hertz,
 	input chan *buffers.IQ,
+	quit chan struct{},
 ) {
-	var output = make(chan *bytes.Buffer, bufferCount)
-	var window = app.NewWindow(app.Title("GOSDR IQ Histogram"))
+	var output = make(chan *bytes.Buffer, bufferCount-1)
 	var ring = buffers.NewIQRing(sampleRate, bufferCount)
 	var bufferRing = buffers.NewBufferRing(bufferCount)
 	var center = conn.GetCenterFrequency()
 	var lower = center - (bandwidth / 2)
 	var upper = lower + bandwidth
 	var histogramFrequencies = getFrequencies(sampleRate, lower, upper)
-	go iqHistogramLoop(histogramFrequencies, ring, bufferRing, input, output)
-	go iqHistogramWindowLoop(window, output)
+	go iqHistogramLoop(histogramFrequencies, ring, bufferRing, input, output, quit)
+	go iqHistogramWindowLoop(output, quit)
 }
 
 func calculatePower(sample complex64) float64 {
@@ -63,17 +63,27 @@ func histogramIQtoFloat(input []complex64, histogram []float64) {
 	}
 }
 
+func frequencyFormatter(v interface{}) string {
+	return units.Hertz(v.(float64)).String()
+}
+
 func iqHistogramLoop(
 	frequencies []float64,
 	ring *buffers.IQRing,
 	bufferRing *buffers.BufferRing,
 	input chan *buffers.IQ,
 	output chan *bytes.Buffer,
+	quit chan struct{},
 ) {
 	log.WithField("filter", "IQHistogram").Debug("Starting")
 	var histogram = make([]float64, len(frequencies))
 	for {
 		select {
+		case <-quit:
+			close(output)
+			log.WithField("filter", "IQHistogram").Debug("Exiting")
+			runtime.GC()
+			return
 		case in, ok := <-input:
 			if !ok {
 				close(output)
@@ -88,8 +98,9 @@ func iqHistogramLoop(
 			graph := chart.Chart{
 				Series: []chart.Series{
 					chart.ContinuousSeries{
-						XValues: frequencies,
-						YValues: histogram,
+						XValues:         frequencies,
+						YValues:         histogram,
+						XValueFormatter: frequencyFormatter,
 					},
 				},
 				YAxis: chart.YAxis{
@@ -119,30 +130,22 @@ func iqHistogramLoop(
 	}
 }
 
-func iqHistogramWindowLoop(window *app.Window, input chan *bytes.Buffer) {
+func iqHistogramWindowLoop(input chan *bytes.Buffer, quit chan struct{}) {
+	var window = app.NewWindow(app.Title("GOSDR IQ Histogram"))
 	var chartImage image.Image
 	var decodeErr error
 	var ops op.Ops
+	var shouldQuit = true
+	var closed bool
+	var sized bool
 	for {
 		select {
-		case in, ok := <-input:
-			if !ok {
-				window.Close()
-				continue
-			}
-			chartImage, _, decodeErr = image.Decode(in)
-			if decodeErr != nil {
-				log.WithError(decodeErr).Error("image.Decode")
-			} else {
-				var size = chartImage.Bounds().Max
-				var x = unit.Dp(float32(size.X))
-				var y = unit.Dp(float32(size.Y))
-				window.Option(app.MaxSize(x, y), app.MinSize(x, y))
-				window.Invalidate()
-			}
 		case e := <-window.Events():
 			switch e := e.(type) {
 			case system.DestroyEvent:
+				if shouldQuit {
+					close(quit)
+				}
 				return
 			case system.FrameEvent:
 				// A request to draw the window state.
@@ -154,6 +157,39 @@ func iqHistogramWindowLoop(window *app.Window, input chan *bytes.Buffer) {
 				}
 				// Update the display.
 				e.Frame(gtx.Ops)
+			}
+			continue
+		case <-quit:
+			if closed {
+				continue
+			}
+			shouldQuit = false
+			window.Perform(system.ActionClose)
+			window.Invalidate()
+			closed = true
+			continue
+		case in, ok := <-input:
+			if !ok {
+				if !closed {
+					shouldQuit = false
+					window.Perform(system.ActionClose)
+					go window.Invalidate()
+					closed = true
+				}
+				continue
+			}
+			chartImage, _, decodeErr = image.Decode(in)
+			if decodeErr != nil {
+				log.WithError(decodeErr).Error("image.Decode")
+			} else {
+				if !sized {
+					var size = chartImage.Bounds().Max
+					var x = unit.Dp(float32(size.X))
+					var y = unit.Dp(float32(size.Y))
+					window.Option(app.MaxSize(x, y), app.MinSize(x, y))
+					sized = true
+				}
+				window.Invalidate()
 			}
 		}
 	}

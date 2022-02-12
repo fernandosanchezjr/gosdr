@@ -25,7 +25,7 @@ func NewWBFMDemodulator(
 	var decimator = dsp.MakeDecimator(wbfmDecimationRatio)
 	var decimatedRate = decimator.PredictOutputSize(iqSampleRate)
 	log.WithField("decimatedRate", decimatedRate).Debug("Decimator")
-	var outputRing = buffers.NewIQRing(decimatedRate, bufferCount)
+	var outputRing = buffers.NewIQRing(decimatedRate, bufferCount-1)
 	go wbfmDemodulatorLoop(iqSampleRate, filter, decimator, outputRing, input, output)
 	return decimatedRate, output
 }

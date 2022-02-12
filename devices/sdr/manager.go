@@ -194,7 +194,7 @@ func (s *Manager) Close(id devices.Id) {
 	defer s.mtx.Unlock()
 	if conn, found := s.connections[id]; found {
 		if closeErr := conn.Close(); closeErr != nil {
-			log.WithFields(conn.Fields()).WithError(closeErr).Warn("Close")
+			log.WithFields(conn.Fields()).WithError(closeErr).Warn("conn.Close")
 		}
 	}
 	s.Cleanup(id)

@@ -4,6 +4,7 @@ import (
 	"github.com/fernandosanchezjr/gosdr/devices"
 	"github.com/fernandosanchezjr/gosdr/devices/sdr"
 	"github.com/sirupsen/logrus"
+	"os"
 )
 
 const (
@@ -36,9 +37,16 @@ func deviceSelector(events chan sdr.DeviceEvent, deviceIds chan devices.Id) {
 	}
 }
 
-func closeConnection(conn devices.Connection) {
-	if err := conn.Close(); err != nil {
-		logrus.WithFields(conn.Fields()).WithError(err).Error("conn.Close")
+func closeConnection(deviceId devices.Id, manager *sdr.Manager) {
+	manager.Close(deviceId)
+}
+
+func connectionQuitter(deviceId devices.Id, manager *sdr.Manager, quit chan struct{}) {
+	select {
+	case <-quit:
+		closeConnection(deviceId, manager)
+		manager.Stop()
+		os.Exit(0)
 	}
 }
 
@@ -53,38 +61,40 @@ func deviceController(manager *sdr.Manager, deviceIds chan devices.Id) {
 			}
 			if agcErr := conn.SetAGC(agc); agcErr != nil {
 				logrus.WithFields(conn.Fields()).WithError(agcErr).Error("conn.SetAGC")
-				closeConnection(conn)
+				closeConnection(id, manager)
 				continue
 			}
 			if autoGainErr := conn.SetAutoGain(autoGain); autoGainErr != nil {
 				logrus.WithFields(conn.Fields()).WithError(autoGainErr).Error("conn.SetAutoGain")
-				closeConnection(conn)
+				closeConnection(id, manager)
 				continue
 			}
 			if gainErr := conn.SetTunerGain(float32(gain)); gainErr != nil {
 				logrus.WithFields(conn.Fields()).WithError(gainErr).Error("conn.SetTunerGain")
-				closeConnection(conn)
+				closeConnection(id, manager)
 				continue
 			}
 			if ppmErr := conn.SetFrequencyCorrection(ppm); ppmErr != nil {
 				logrus.WithFields(conn.Fields()).WithError(ppmErr).Error("conn.SetFrequencyCorrection")
-				closeConnection(conn)
+				closeConnection(id, manager)
 				continue
 			}
 			if freqErr := conn.SetCenterFrequency(frequency); freqErr != nil {
 				logrus.WithFields(conn.Fields()).WithError(freqErr).Error("conn.SetCenterFrequency")
-				closeConnection(conn)
+				closeConnection(id, manager)
 				continue
 			}
 			if resetErr := conn.Reset(); resetErr != nil {
 				logrus.WithFields(conn.Fields()).WithError(resetErr).Error("conn.Reset")
-				closeConnection(conn)
+				closeConnection(id, manager)
 				continue
 			}
-			var input = createGraph(conn, graphBufferCount)
+			var quit = make(chan struct{})
+			var input = createGraph(conn, graphBufferCount, quit)
 			manager.AddDeviceCleanup(id, func() {
 				close(input)
 			})
+			go connectionQuitter(id, manager, quit)
 			go sampleDevice(conn, input)
 			logrus.WithFields(conn.Fields()).Info("Sampling SDR")
 		}

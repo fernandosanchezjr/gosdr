@@ -6,21 +6,31 @@ import (
 	"runtime"
 )
 
-func NewIQSampler(sampleRate int, bufferCount int) (int, chan []byte, chan *buffers.IQ) {
+func NewIQSampler(sampleRate int, bufferCount int, quit chan struct{}) (int, chan []byte, chan *buffers.IQ) {
 	var iqSampleRate = sampleRate / 2
 	var input = make(chan []byte, bufferCount)
-	var output = make(chan *buffers.IQ, bufferCount)
+	var output = make(chan *buffers.IQ, bufferCount-1)
 	var ring = buffers.NewIQRing(iqSampleRate, bufferCount)
-	go iqSamplerLoop(ring, input, output)
+	go iqSamplerLoop(ring, input, output, quit)
 	return iqSampleRate, input, output
 }
 
-func iqSamplerLoop(ring *buffers.IQRing, input chan []byte, output chan *buffers.IQ) {
+func iqSamplerLoop(
+	ring *buffers.IQRing,
+	input chan []byte,
+	output chan *buffers.IQ,
+	quit chan struct{},
+) {
 	log.WithField("filter", "IQSampler").Debug("Starting")
 	var sequence uint64
 	var out = ring.Next()
 	for {
 		select {
+		case <-quit:
+			close(output)
+			log.WithField("filter", "IQSampler").Debug("Exiting")
+			runtime.GC()
+			return
 		case raw, ok := <-input:
 			if !ok {
 				close(output)

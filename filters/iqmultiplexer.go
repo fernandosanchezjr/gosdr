@@ -14,26 +14,36 @@ type iqMultiplexerDestination struct {
 func NewIQMultiplexer(
 	sampleRate int,
 	bufferCount int,
+	quit chan struct{},
 	input chan *buffers.IQ,
 	output ...chan *buffers.IQ,
 ) {
 	var destinations = make([]*iqMultiplexerDestination, len(output))
 	for index, out := range output {
 		destinations[index] = &iqMultiplexerDestination{
-			outputRing: buffers.NewIQRing(sampleRate, bufferCount),
+			outputRing: buffers.NewIQRing(sampleRate, bufferCount-1),
 			output:     out,
 		}
 	}
-	go iqMultiplexerLoop(input, destinations)
+	go iqMultiplexerLoop(quit, input, destinations)
 }
 
 func iqMultiplexerLoop(
+	quit chan struct{},
 	input chan *buffers.IQ,
 	outputs []*iqMultiplexerDestination,
 ) {
 	log.WithField("filter", "IQMultiplexer").Debug("Starting")
 	for {
 		select {
+		case <-quit:
+			for _, destination := range outputs {
+				close(destination.output)
+			}
+			outputs = nil
+			log.WithField("filter", "IQMultiplexer").Debug("Exiting")
+			runtime.GC()
+			return
 		case in, ok := <-input:
 			if !ok {
 				for _, destination := range outputs {

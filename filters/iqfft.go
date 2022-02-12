@@ -8,11 +8,17 @@ import (
 	"runtime"
 )
 
-func NewIQFFT(fftSize int, sampleRate int, bufferCount int, input chan *buffers.IQ) chan *buffers.IQ {
-	var output = make(chan *buffers.IQ, bufferCount)
+func NewIQFFT(
+	fftSize int,
+	sampleRate int,
+	bufferCount int,
+	input chan *buffers.IQ,
+	quit chan struct{},
+) chan *buffers.IQ {
+	var output = make(chan *buffers.IQ, bufferCount-1)
+	var outputRing = buffers.NewIQRing(fftSize, bufferCount)
 	var window = dsp.BlackmanHarris(fftSize, 92)
-	var outputRing = buffers.NewIQRing(fftSize, sampleRate/fftSize)
-	go iqFFTLoop(fftSize, sampleRate, window, outputRing, input, output)
+	go iqFFTLoop(fftSize, sampleRate, window, outputRing, input, output, quit)
 	log.WithFields(log.Fields{
 		"sampleRate": sampleRate,
 	}).Debug("IQFFT")
@@ -32,6 +38,7 @@ func iqFFTLoop(
 	outputRing *buffers.IQRing,
 	input chan *buffers.IQ,
 	output chan *buffers.IQ,
+	quit chan struct{},
 ) {
 	log.WithField("filter", "IQFFT").Debug("Starting")
 	var midPoint = (fftSize / 2) + (fftSize % 2)
@@ -39,6 +46,11 @@ func iqFFTLoop(
 	var currentIQ = buffers.NewIQ(sampleRate)
 	for {
 		select {
+		case <-quit:
+			close(output)
+			log.WithField("filter", "IQFFT").Debug("Exiting")
+			runtime.GC()
+			return
 		case in, ok := <-input:
 			if !ok {
 				close(output)
