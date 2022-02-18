@@ -58,8 +58,16 @@ func calculatePower(sample complex64) float64 {
 }
 
 func histogramIQtoFloat(input []complex64, histogram []float64) {
+	var power, min, max, powerRange float64
 	for i, value := range input {
-		histogram[i] = calculatePower(value)
+		power = calculatePower(value)
+		min = math.Min(min, power)
+		max = math.Max(max, power)
+		histogram[i] = power
+	}
+	powerRange = max - min
+	for i, value := range histogram {
+		histogram[i] = (((value - min) / powerRange) * 150.0) - 150.0
 	}
 }
 
@@ -77,6 +85,32 @@ func iqHistogramLoop(
 ) {
 	log.WithField("filter", "IQHistogram").Debug("Starting")
 	var histogram = make([]float64, len(frequencies))
+	graph := chart.Chart{
+		Series: []chart.Series{
+			chart.ContinuousSeries{
+				XValues:         frequencies,
+				YValues:         histogram,
+				XValueFormatter: frequencyFormatter,
+			},
+		},
+		YAxis: chart.YAxis{
+			Name:      "",
+			NameStyle: chart.Style{},
+			Style:     chart.Style{},
+			Zero:      chart.GridLine{},
+			AxisType:  0,
+			Ascending: false,
+			Range: &chart.ContinuousRange{
+				Min:        -150,
+				Max:        0,
+				Domain:     len(histogram),
+				Descending: false,
+			},
+			TickStyle:      chart.Style{},
+			GridMajorStyle: chart.Style{},
+			GridMinorStyle: chart.Style{},
+		},
+	}
 	for {
 		select {
 		case <-quit:
@@ -95,32 +129,6 @@ func iqHistogramLoop(
 			out.Copy(in)
 			histogramIQtoFloat(out.Data(), histogram)
 			var outBuf = bufferRing.Next()
-			graph := chart.Chart{
-				Series: []chart.Series{
-					chart.ContinuousSeries{
-						XValues:         frequencies,
-						YValues:         histogram,
-						XValueFormatter: frequencyFormatter,
-					},
-				},
-				YAxis: chart.YAxis{
-					Name:      "",
-					NameStyle: chart.Style{},
-					Style:     chart.Style{},
-					Zero:      chart.GridLine{},
-					AxisType:  0,
-					Ascending: false,
-					Range: &chart.ContinuousRange{
-						Min:        -160,
-						Max:        60,
-						Domain:     len(histogram),
-						Descending: false,
-					},
-					TickStyle:      chart.Style{},
-					GridMajorStyle: chart.Style{},
-					GridMinorStyle: chart.Style{},
-				},
-			}
 			if renderErr := graph.Render(chart.PNG, outBuf); renderErr != nil {
 				log.WithError(renderErr).Error("graph.Render")
 			} else {
