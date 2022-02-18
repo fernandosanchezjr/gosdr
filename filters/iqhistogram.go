@@ -75,17 +75,8 @@ func frequencyFormatter(v interface{}) string {
 	return units.Hertz(v.(float64)).String()
 }
 
-func iqHistogramLoop(
-	frequencies []float64,
-	ring *buffers.IQRing,
-	bufferRing *buffers.BufferRing,
-	input chan *buffers.IQ,
-	output chan *bytes.Buffer,
-	quit chan struct{},
-) {
-	log.WithField("filter", "IQHistogram").Debug("Starting")
-	var histogram = make([]float64, len(frequencies))
-	graph := chart.Chart{
+func createGraph(frequencies []float64, histogram []float64) chart.Chart {
+	return chart.Chart{
 		Series: []chart.Series{
 			chart.ContinuousSeries{
 				XValues:         frequencies,
@@ -111,6 +102,19 @@ func iqHistogramLoop(
 			GridMinorStyle: chart.Style{},
 		},
 	}
+}
+
+func iqHistogramLoop(
+	frequencies []float64,
+	ring *buffers.IQRing,
+	bufferRing *buffers.BufferRing,
+	input chan *buffers.IQ,
+	output chan *bytes.Buffer,
+	quit chan struct{},
+) {
+	log.WithField("filter", "IQHistogram").Debug("Starting")
+	var histogram = make([]float64, len(frequencies))
+	graph := createGraph(frequencies, histogram)
 	for {
 		select {
 		case <-quit:
