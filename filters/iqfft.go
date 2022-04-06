@@ -27,8 +27,8 @@ func NewIQFFT(
 
 func computeFFT(midPoint int, input []complex64, output []complex64) {
 	copy(input, fft.FFT(input))
-	copy(output[0:midPoint], input[midPoint:])
-	copy(output[midPoint+1:], input[0:midPoint-1])
+	copy(output[:midPoint], input[midPoint:])
+	copy(output[midPoint:], input[:midPoint])
 }
 
 func iqFFTLoop(
