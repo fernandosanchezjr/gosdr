@@ -82,23 +82,43 @@ func normalizePower(input []complex64, histogram []float64) {
 	}
 }
 
-func drawHistogram(sampleRate int, ops *op.Ops, histogram []float64) {
-	paint.Fill(ops, color.NRGBA{A: 0xff})
+func generatePath(sampleRate int, gtx layout.Context, histogram []float64) clip.PathSpec {
 	var path = &clip.Path{}
-	path.Begin(ops)
-	path.MoveTo(f32.Pt(0.0, float32(histogram[0])))
+	path.Begin(gtx.Ops)
+	path.MoveTo(f32.Pt(-1.0, 151.0))
 	for pos, value := range histogram {
 		path.LineTo(f32.Pt(float32(pos), float32(value)))
 	}
-	path.MoveTo(f32.Pt(float32(sampleRate), float32(histogram[len(histogram)-1])))
-	path.MoveTo(f32.Pt(float32(sampleRate), 0.0))
+	path.LineTo(f32.Pt(float32(sampleRate+1), float32(histogram[len(histogram)-1])))
+	path.LineTo(f32.Pt(float32(sampleRate+1), 151.0))
+	path.LineTo(f32.Pt(-1.0, 151.0))
 	path.Close()
+	var pathSpec = path.End()
+	return pathSpec
+}
+
+func drawHistogram(sampleRate int, gtx layout.Context, histogram []float64) {
+	paint.Fill(gtx.Ops, color.NRGBA{A: 0xff})
+	paint.ColorOp{
+		Color: color.NRGBA{R: 0xcc, G: 0xcc, A: 0xee},
+	}.Add(gtx.Ops)
+
+	var path = generatePath(sampleRate, gtx, histogram)
+
 	paint.FillShape(
-		ops,
+		gtx.Ops,
 		color.NRGBA{R: 0xcc, G: 0xcc, A: 0xff},
 		clip.Stroke{
-			Path:  path.End(),
-			Width: 0.8,
+			Path:  path,
+			Width: 1.0,
+		}.Op(),
+	)
+
+	paint.FillShape(
+		gtx.Ops,
+		color.NRGBA{A: 0xff},
+		clip.Outline{
+			Path: path,
 		}.Op(),
 	)
 }
@@ -122,10 +142,9 @@ func iqHistogramWindowLoop(sampleRate int, ring *buffers.IQRing, input chan *buf
 				return
 			case system.FrameEvent:
 				gtx := layout.NewContext(&ops, e)
-				drawHistogram(sampleRate, &ops, histogram)
+				drawHistogram(sampleRate, gtx, histogram)
 				e.Frame(gtx.Ops)
 			}
-			continue
 		case <-quit:
 			if closed {
 				continue
@@ -134,7 +153,6 @@ func iqHistogramWindowLoop(sampleRate int, ring *buffers.IQRing, input chan *buf
 			window.Perform(system.ActionClose)
 			window.Invalidate()
 			closed = true
-			continue
 		case in, ok := <-input:
 			if !ok {
 				if !closed {
