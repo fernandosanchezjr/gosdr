@@ -2,7 +2,6 @@ package sdr
 
 import (
 	"gioui.org/layout"
-	"gioui.org/unit"
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 	"gioui.org/x/component"
@@ -50,7 +49,7 @@ func (p *Page) NavItem() component.NavItem {
 }
 
 func (p *Page) Layout(gtx C, th *themes.Theme) D {
-	return components.ListInset(gtx, unit.Dp(10), func(gtx C) D {
+	return components.ListInset(gtx, th.Inset, func(gtx C) D {
 		return material.List(th.Theme, &p.List).Layout(gtx, 1, func(gtx C, _ int) D {
 			return components.VerticalList(gtx, p.State.DeviceCards()...)
 		})

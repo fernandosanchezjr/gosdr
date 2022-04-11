@@ -3,7 +3,7 @@ package pages
 import (
 	"gioui.org/layout"
 	"gioui.org/widget"
-	"github.com/fernandosanchezjr/gosdr/cmd/gosdr/components"
+	"github.com/fernandosanchezjr/gosdr/cmd/gosdr/components/device_card"
 	"github.com/fernandosanchezjr/gosdr/cmd/gosdr/themes"
 	"github.com/fernandosanchezjr/gosdr/devices"
 	"github.com/fernandosanchezjr/gosdr/devices/sdr"
@@ -51,7 +51,7 @@ func (s *State) AddDevice(id devices.Id) {
 		s.connectButtons[id] = connectButton
 		s.samplingMode[id] = samplingMode
 		s.deviceCards[id] = layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-			return components.DeviceCard(gtx, s.th, s.sdrManager, device, connectButton, samplingMode)
+			return device_card.DeviceCard(gtx, s.th, s.sdrManager, device, connectButton, samplingMode)
 		})
 	}
 }

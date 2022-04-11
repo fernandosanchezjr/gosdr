@@ -1,11 +1,14 @@
 package themes
 
 import (
+	"gioui.org/unit"
 	"image/color"
 
 	"gioui.org/font/gofont"
 	"gioui.org/widget/material"
 )
+
+const defaultInset = 10
 
 // PairFor wraps the provided theme color in a Color type with an automatically
 // populated Text color. The Text field value is chosen based on the luminance
@@ -82,6 +85,7 @@ func NewTheme() *Theme {
 	t.Selected = &t.Secondary.Light.Bg
 	t.Unselected = &t.Background.Light.Bg
 	t.Siblings = t.Unselected
+	t.Inset = unit.Dp(defaultInset)
 	return &t
 }
 
@@ -132,4 +136,6 @@ type Theme struct {
 	Background Swatch
 
 	Ancestors, Descendants, Selected, Siblings, Unselected *color.NRGBA
+
+	Inset unit.Value
 }

@@ -32,13 +32,10 @@ type Router struct {
 
 func NewRouter(th *themes.Theme, sdrManager *sdr.Manager) Router {
 	modal := component.NewModal()
-
 	nav := component.NewNav("GOSDR", "v0.0.1")
 	modalNav := component.ModalNavFrom(&nav, modal)
-
 	bar := component.NewAppBar(modal)
 	bar.NavigationIcon = icon.MenuIcon
-
 	na := component.VisibilityAnimation{
 		State:    component.Invisible,
 		Duration: time.Millisecond * 250,
@@ -78,6 +75,36 @@ func (r *Router) SwitchTo(tag interface{}) {
 	r.AppBar.SetActions(p.Actions(), p.Overflow())
 }
 
+func (r *Router) layoutContent(th *themes.Theme) layout.FlexChild {
+	return layout.Flexed(1, func(gtx layout.Context) layout.Dimensions {
+		return layout.Flex{}.Layout(gtx,
+			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+				gtx.Constraints.Max.X /= 3
+				return r.NavDrawer.Layout(gtx, th.Theme, &r.NavAnim)
+			}),
+			layout.Flexed(1, func(gtx layout.Context) layout.Dimensions {
+				return r.pages[r.current].Layout(gtx, th)
+			}),
+		)
+	})
+}
+
+func (r *Router) layoutBar(th *themes.Theme) layout.FlexChild {
+	return layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+		return r.AppBar.Layout(gtx, th.Theme, "Menu", "Actions")
+	})
+}
+
+func (r *Router) layoutPage(gtx layout.Context, th *themes.Theme) layout.Dimensions {
+	paint.Fill(gtx.Ops, th.Background.Dark.Bg)
+	content := r.layoutContent(th)
+	bar := r.layoutBar(th)
+	flex := layout.Flex{Axis: layout.Vertical}
+	flex.Layout(gtx, bar, content)
+	r.ModalLayer.Layout(gtx, th.Theme)
+	return layout.Dimensions{Size: gtx.Constraints.Max}
+}
+
 func (r *Router) Layout(gtx layout.Context, th *themes.Theme) layout.Dimensions {
 	for _, event := range r.AppBar.Events(gtx) {
 		switch event := event.(type) {
@@ -93,23 +120,5 @@ func (r *Router) Layout(gtx layout.Context, th *themes.Theme) layout.Dimensions 
 	if r.ModalNavDrawer.NavDestinationChanged() {
 		r.SwitchTo(r.ModalNavDrawer.CurrentNavDestination())
 	}
-	paint.Fill(gtx.Ops, th.Background.Dark.Bg)
-	content := layout.Flexed(1, func(gtx layout.Context) layout.Dimensions {
-		return layout.Flex{}.Layout(gtx,
-			layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-				gtx.Constraints.Max.X /= 3
-				return r.NavDrawer.Layout(gtx, th.Theme, &r.NavAnim)
-			}),
-			layout.Flexed(1, func(gtx layout.Context) layout.Dimensions {
-				return r.pages[r.current].Layout(gtx, th)
-			}),
-		)
-	})
-	bar := layout.Rigid(func(gtx layout.Context) layout.Dimensions {
-		return r.AppBar.Layout(gtx, th.Theme, "Menu", "Actions")
-	})
-	flex := layout.Flex{Axis: layout.Vertical}
-	flex.Layout(gtx, bar, content)
-	r.ModalLayer.Layout(gtx, th.Theme)
-	return layout.Dimensions{Size: gtx.Constraints.Max}
+	return r.layoutPage(gtx, th)
 }
