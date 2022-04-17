@@ -61,6 +61,10 @@ func (ts *Timestamp) Reset() {
 }
 
 func (ts *Timestamp) Copy(other *Timestamp) {
+	if other.last < ts.last {
+		other.digits = make([]uint64, len(ts.digits))
+		other.last = ts.last
+	}
 	other.Reset()
 	copy(other.digits, ts.digits)
 }

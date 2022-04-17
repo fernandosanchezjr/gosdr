@@ -28,4 +28,5 @@ type Connection interface {
 	RunSampler(handler func(samples []byte)) error
 	StopSampling() error
 	GetFrequencyBounds() (lower units.Hertz, upper units.Hertz)
+	GetBuffersPerSecond() int
 }

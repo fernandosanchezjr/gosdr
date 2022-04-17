@@ -280,3 +280,7 @@ func (d *Connection) GetFrequencyBounds() (lower units.Hertz, upper units.Hertz)
 	upper = center + difference
 	return
 }
+
+func (d *Connection) GetBuffersPerSecond() int {
+	return int(d.GetSampleRate() / d.SampleBufferSize())
+}

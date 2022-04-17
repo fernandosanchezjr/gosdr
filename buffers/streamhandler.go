@@ -1,3 +1,3 @@
 package buffers
 
-type StreamHandler func(data []byte)
+type BlockHandler func(block *Block)

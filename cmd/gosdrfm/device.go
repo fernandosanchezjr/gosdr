@@ -90,12 +90,13 @@ func deviceController(manager *sdr.Manager, deviceIds chan devices.Id) {
 				continue
 			}
 			var quit = make(chan struct{})
-			var input = createGraph(conn, graphBufferCount, quit)
+			var bufferCount = conn.GetBuffersPerSecond() * 2
+			var input = createGraph2(conn, graphBufferCount)
 			manager.AddDeviceCleanup(id, func() {
-				close(input)
+				input.Close()
 			})
 			go connectionQuitter(id, manager, quit)
-			go sampleDevice(conn, input)
+			go sampleDevice2(conn, bufferCount, input)
 			logrus.WithFields(conn.Fields()).Info("Sampling SDR")
 		}
 	}

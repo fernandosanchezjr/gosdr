@@ -7,15 +7,15 @@ import (
 
 const testStreamSize = 64
 
-func createData() []byte {
-	data := make([]byte, 0xffff)
-	for i := range data {
-		data[i] = byte(i)
+func createBlock() *Block {
+	b := NewBlock(0xffff)
+	for i := range b.Data {
+		b.Data[i] = byte(i)
 	}
-	return data
+	return b
 }
 
-func testStreamHandler([]byte) {
+func testStreamHandler(*Block) {
 
 }
 
@@ -46,9 +46,9 @@ func checkResult(t *testing.T, result bool, count *int, args ...any) {
 
 func TestNewStream(t *testing.T) {
 	s := NewStream(testStreamSize)
-	data := createData()
+	block := createBlock()
 	for i := 0; i < 1024; i++ {
-		s.Send(data)
+		s.Send(block)
 		closed := s.Receive(testStreamHandler)
 		if closed {
 			t.Fatal("stream closed early")
@@ -79,7 +79,7 @@ func TestNewStream(t *testing.T) {
 
 func BenchmarkStream_Send(b *testing.B) {
 	s := NewStream(testStreamSize)
-	data := createData()
+	block := createBlock()
 	go func() {
 		for {
 			closed := s.Receive(testStreamHandler)
@@ -91,7 +91,7 @@ func BenchmarkStream_Send(b *testing.B) {
 	}()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		s.Send(data)
+		s.Send(block)
 	}
 	b.StopTimer()
 	s.Close()
