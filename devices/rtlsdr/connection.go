@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/fernandosanchezjr/gosdr/devices"
 	"github.com/fernandosanchezjr/gosdr/units"
+	"github.com/fernandosanchezjr/gosdr/utils"
 	rtl "github.com/jpoirier/gortlsdr"
 	log "github.com/sirupsen/logrus"
 )
@@ -32,6 +33,7 @@ type Connection struct {
 	RTLFrequency    units.Hertz
 	TunerFrequency  units.Hertz
 	TunerBandwidth  units.Hertz
+	samplingFlag    uint32
 	sampling        bool
 }
 
@@ -261,13 +263,14 @@ func (d *Connection) samplingStopped() {
 }
 
 func (d *Connection) RunSampler(handler func(samples []byte)) error {
-	d.samplingStarted()
-	defer d.samplingStopped()
+	utils.SetFlag(&d.samplingFlag)
+	defer utils.UnsetFlag(&d.samplingFlag)
 	return d.context.ReadAsync(handler, nil, 0, 0)
 }
 
 func (d *Connection) StopSampling() error {
-	if d.sampling {
+	defer utils.UnsetFlag(&d.samplingFlag)
+	if utils.GetFlag(&d.samplingFlag) {
 		return d.context.CancelAsync()
 	}
 	return nil

@@ -2,26 +2,26 @@ package buffers
 
 import "container/ring"
 
-type BlockRing struct {
+type BlockRing[T BlockType] struct {
 	buffers *ring.Ring
 }
 
-func NewBlockRing(size, count int) *BlockRing {
-	var r = &BlockRing{
+func NewBlockRing[T BlockType](size, count int) *BlockRing[T] {
+	var r = &BlockRing[T]{
 		buffers: ring.New(count),
 	}
 	r.init(size)
 	return r
 }
 
-func (r *BlockRing) init(size int) {
+func (r *BlockRing[T]) init(size int) {
 	for i := 0; i < r.buffers.Len(); i++ {
-		r.buffers.Value = NewBlock(size)
+		r.buffers.Value = NewBlock[T](size)
 		r.buffers = r.buffers.Next()
 	}
 }
 
-func (r *BlockRing) Next() *Block {
+func (r *BlockRing[T]) Next() *Block[T] {
 	r.buffers = r.buffers.Next()
-	return r.buffers.Value.(*Block)
+	return r.buffers.Value.(*Block[T])
 }

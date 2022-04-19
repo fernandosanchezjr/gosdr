@@ -60,13 +60,13 @@ func (ts *Timestamp) Reset() {
 	ts.digits[ts.last] = 0
 }
 
-func (ts *Timestamp) Copy(other *Timestamp) {
-	if other.last < ts.last {
-		other.digits = make([]uint64, len(ts.digits))
-		other.last = ts.last
+func (ts *Timestamp) Copy(destination *Timestamp) {
+	if destination.last < ts.last {
+		destination.digits = make([]uint64, len(ts.digits))
+		destination.last = ts.last
 	}
-	other.Reset()
-	copy(other.digits, ts.digits)
+	destination.Reset()
+	copy(destination.digits, ts.digits)
 }
 
 func (ts *Timestamp) Less(other *Timestamp) bool {
@@ -81,6 +81,5 @@ func (ts *Timestamp) Less(other *Timestamp) bool {
 			return false
 		}
 	}
-
 	return ts.last <= other.last
 }

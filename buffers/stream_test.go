@@ -1,21 +1,22 @@
 package buffers
 
 import (
+	log "github.com/sirupsen/logrus"
 	"testing"
 	"time"
 )
 
 const testStreamSize = 64
 
-func createBlock() *Block {
-	b := NewBlock(0xffff)
-	for i := range b.Data {
-		b.Data[i] = byte(i)
+func createTestBlock() *Block[byte] {
+	b := NewBlock[byte](0xffff)
+	for pos := range b.Data {
+		b.Data[pos] = byte(pos % 0xff)
 	}
 	return b
 }
 
-func testStreamHandler(*Block) {
+func testStreamHandler[T BlockType](*Block[T]) {
 
 }
 
@@ -45,12 +46,11 @@ func checkResult(t *testing.T, result bool, count *int, args ...any) {
 }
 
 func TestNewStream(t *testing.T) {
-	s := NewStream(testStreamSize)
-	block := createBlock()
+	s := NewStream[byte](testStreamSize)
+	block := createTestBlock()
 	for i := 0; i < 1024; i++ {
 		s.Send(block)
-		closed := s.Receive(testStreamHandler)
-		if closed {
+		if closed := s.Receive(testStreamHandler[byte]); closed {
 			t.Fatal("stream closed early")
 		}
 	}
@@ -59,8 +59,7 @@ func TestNewStream(t *testing.T) {
 		return true
 	})
 	doneChan := testAsync(func() bool {
-		closed := s.Receive(testStreamHandler)
-		if !closed {
+		if closed := s.Receive(testStreamHandler[byte]); !closed {
 			return false
 		}
 		s.Done()
@@ -78,12 +77,12 @@ func TestNewStream(t *testing.T) {
 }
 
 func BenchmarkStream_Send(b *testing.B) {
-	s := NewStream(testStreamSize)
-	block := createBlock()
+	s := NewStream[byte](testStreamSize)
+	block := createTestBlock()
+	log.Println(block)
 	go func() {
 		for {
-			closed := s.Receive(testStreamHandler)
-			if closed {
+			if closed := s.Receive(testStreamHandler[byte]); closed {
 				s.Done()
 				return
 			}
@@ -95,4 +94,21 @@ func BenchmarkStream_Send(b *testing.B) {
 	}
 	b.StopTimer()
 	s.Close()
+}
+
+func BenchmarkStream_Receive(b *testing.B) {
+	s := NewStream[byte](testStreamSize)
+	block := createTestBlock()
+	go func() {
+		for i := 0; i < b.N; i++ {
+			s.Send(block)
+		}
+	}()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		if closed := s.Receive(testStreamHandler[byte]); closed {
+			s.Done()
+		}
+	}
+	b.StopTimer()
 }
