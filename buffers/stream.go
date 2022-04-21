@@ -8,13 +8,19 @@ import (
 type Stream[T BlockType] struct {
 	ch        chan *Block[T]
 	wg        sync.WaitGroup
+	ring      *BlockRing[T]
 	receiving uint32
 	closed    uint32
+	Count     int
+	Size      int
 }
 
-func NewStream[T BlockType](size int) *Stream[T] {
+func NewStream[T BlockType](size int, count int) *Stream[T] {
 	return &Stream[T]{
-		ch: make(chan *Block[T], size-1),
+		ch:    make(chan *Block[T], count-1),
+		ring:  NewBlockRing[T](size, count),
+		Count: count,
+		Size:  size,
 	}
 }
 
@@ -58,4 +64,10 @@ func (s *Stream[T]) Done() {
 		return
 	}
 	s.wg.Done()
+}
+
+func (s *Stream[T]) Next() *Block[T] {
+	var next = s.ring.Next()
+	next.Reset()
+	return next
 }

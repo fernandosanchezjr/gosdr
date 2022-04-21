@@ -7,6 +7,7 @@ import (
 )
 
 const testStreamSize = 64
+const testStreamCount = 16
 
 func createTestBlock() *Block[byte] {
 	b := NewBlock[byte](0xffff)
@@ -46,7 +47,7 @@ func checkResult(t *testing.T, result bool, count *int, args ...any) {
 }
 
 func TestNewStream(t *testing.T) {
-	s := NewStream[byte](testStreamSize)
+	s := NewStream[byte](testStreamSize, testStreamCount)
 	block := createTestBlock()
 	for i := 0; i < 1024; i++ {
 		s.Send(block)
@@ -77,7 +78,7 @@ func TestNewStream(t *testing.T) {
 }
 
 func BenchmarkStream_Send(b *testing.B) {
-	s := NewStream[byte](testStreamSize)
+	s := NewStream[byte](testStreamSize, testStreamCount)
 	block := createTestBlock()
 	log.Println(block)
 	go func() {
@@ -97,7 +98,7 @@ func BenchmarkStream_Send(b *testing.B) {
 }
 
 func BenchmarkStream_Receive(b *testing.B) {
-	s := NewStream[byte](testStreamSize)
+	s := NewStream[byte](testStreamSize, testStreamCount)
 	block := createTestBlock()
 	go func() {
 		for i := 0; i < b.N; i++ {

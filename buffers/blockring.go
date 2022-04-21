@@ -4,11 +4,15 @@ import "container/ring"
 
 type BlockRing[T BlockType] struct {
 	buffers *ring.Ring
+	Size    int
+	Count   int
 }
 
 func NewBlockRing[T BlockType](size, count int) *BlockRing[T] {
 	var r = &BlockRing[T]{
 		buffers: ring.New(count),
+		Size:    size,
+		Count:   count,
 	}
 	r.init(size)
 	return r

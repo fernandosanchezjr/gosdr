@@ -1,5 +1,5 @@
 package utils
 
-func ConvertByte(u byte) float32 {
-	return (float32(u) - 127.4) / 128
+func ConvertByte[F float32 | float64](u byte) F {
+	return (F(u) - 127.4) / 128
 }

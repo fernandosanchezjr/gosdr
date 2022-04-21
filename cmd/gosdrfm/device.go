@@ -71,8 +71,13 @@ func deviceController(manager *sdr.Manager, deviceIds chan devices.Id) {
 				manager.Close(id)
 				continue
 			}
-			var bufferCount = conn.GetBuffersPerSecond() * 2
-			var input = createGraph2(conn, bufferCount)
+			var bufferCount = conn.GetBuffersPerSecond()
+			var input, graphErr = createGraph2(conn, bufferCount)
+			if graphErr != nil {
+				log.WithError(graphErr).Error("createGraph()")
+				manager.Close(id)
+				continue
+			}
 			manager.AddDeviceCleanup(id, func() {
 				input.Close()
 			})
