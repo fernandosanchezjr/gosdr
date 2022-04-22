@@ -3,7 +3,6 @@ package filters
 import (
 	"fmt"
 	"github.com/fernandosanchezjr/gosdr/buffers"
-	"github.com/racerxdl/segdsp/dsp"
 	"github.com/racerxdl/segdsp/dsp/fft"
 	log "github.com/sirupsen/logrus"
 	"sync/atomic"
@@ -20,7 +19,7 @@ type fftState[T fftTypes] struct {
 	output      *buffers.Stream[T]
 	timestamp   *buffers.Timestamp
 	fftBlock    *buffers.Block[T]
-	window      []float64
+	window      []float32
 	skipSamples int
 	midPoint    int
 	logger      *log.Entry
@@ -42,7 +41,7 @@ func NewFFT[T fftTypes](
 		input:       input,
 		output:      output,
 		fftBlock:    fftBlock,
-		window:      dsp.BlackmanHarris(fftSize, 92),
+		window:      createWindowComplex64(fftSize),
 		skipSamples: input.Size / fftSize,
 		midPoint:    (fftSize / 2) + (fftSize % 2),
 		logger: log.WithFields(log.Fields{
@@ -54,16 +53,8 @@ func NewFFT[T fftTypes](
 	return
 }
 
-func (filter *fftState[T]) windowComplex64(input []complex64) {
-	for pos, value := range filter.window {
-		var floatValue = float32(value)
-		var complexValue = input[pos]
-		input[pos] = complex(real(complexValue)*floatValue, imag(complexValue)*floatValue)
-	}
-}
-
 func (filter *fftState[T]) fftComplex64(input, output []complex64) {
-	filter.windowComplex64(input)
+	computeWindowComplex64(input, filter.window)
 	var fftOut = fft.FFT(input)
 	copy(output[:filter.midPoint], fftOut[filter.midPoint:])
 	copy(output[filter.midPoint:], fftOut[:filter.midPoint])

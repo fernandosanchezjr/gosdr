@@ -2,6 +2,7 @@ package buffers
 
 import (
 	"github.com/fernandosanchezjr/gosdr/utils"
+	"runtime"
 	"sync"
 )
 
@@ -38,6 +39,9 @@ func (s *Stream[T]) Send(data *Block[T]) {
 }
 
 func (s *Stream[T]) Receive(handler BlockHandler[T]) (closed bool) {
+	if utils.GetFlag(&s.closed) {
+		return
+	}
 	s.markReceiving()
 	select {
 	case data, ok := <-s.ch:
@@ -57,6 +61,7 @@ func (s *Stream[T]) Close() {
 	utils.SetFlag(&s.closed)
 	close(s.ch)
 	s.wg.Wait()
+	runtime.GC()
 }
 
 func (s *Stream[T]) Done() {
@@ -64,6 +69,7 @@ func (s *Stream[T]) Done() {
 		return
 	}
 	s.wg.Done()
+	runtime.GC()
 }
 
 func (s *Stream[T]) Next() *Block[T] {

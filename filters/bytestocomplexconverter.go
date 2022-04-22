@@ -9,21 +9,25 @@ import (
 
 var bytesToComplexConverterId uint64
 
-type bytesToComplexConverterState[O complex64 | complex128] struct {
-	input      *buffers.Stream[byte]
-	output     *buffers.Stream[O]
-	timestamp  *buffers.Timestamp
-	logger     *log.Entry
-	resultType O
+type bytesToComplexTypes interface {
+	complex64 | complex128
 }
 
-func NewBytesToComplexConverter[O complex64 | complex128](
+type bytesToComplexConverterState[T bytesToComplexTypes] struct {
+	input      *buffers.Stream[byte]
+	output     *buffers.Stream[T]
+	timestamp  *buffers.Timestamp
+	logger     *log.Entry
+	resultType T
+}
+
+func NewBytesToComplexConverter[T bytesToComplexTypes](
 	input *buffers.Stream[byte],
-) (output *buffers.Stream[O]) {
+) (output *buffers.Stream[T]) {
 	var newSize = input.Size / 2
 	var id = atomic.AddUint64(&bytesToComplexConverterId, 1)
-	output = buffers.NewStream[O](newSize, input.Count)
-	var filter = &bytesToComplexConverterState[O]{
+	output = buffers.NewStream[T](newSize, input.Count)
+	var filter = &bytesToComplexConverterState[T]{
 		input:  input,
 		output: output,
 		logger: log.WithFields(log.Fields{
@@ -35,44 +39,44 @@ func NewBytesToComplexConverter[O complex64 | complex128](
 	return
 }
 
-func float32Converter[O complex64 | complex128](data []byte, out *buffers.Block[O]) {
+func float32Converter[T bytesToComplexTypes](data []byte, out *buffers.Block[T]) {
 	var outPos int
 	for i := 0; i < len(data); i += 2 {
-		out.Data[outPos] = O(complex(utils.ConvertByte[float32](data[i]), utils.ConvertByte[float32](data[i+1])))
+		out.Data[outPos] = T(complex(utils.ConvertByte[float32](data[i]), utils.ConvertByte[float32](data[i+1])))
 		outPos++
 	}
 }
 
-func float64Converter[O complex64 | complex128](data []byte, out *buffers.Block[O]) {
+func float64Converter[T bytesToComplexTypes](data []byte, out *buffers.Block[T]) {
 	var outPos int
 	for i := 0; i < len(data); i += 2 {
-		out.Data[outPos] = O(complex(utils.ConvertByte[float64](data[i]), utils.ConvertByte[float64](data[i+1])))
+		out.Data[outPos] = T(complex(utils.ConvertByte[float64](data[i]), utils.ConvertByte[float64](data[i+1])))
 		outPos++
 	}
 }
 
-func (filter *bytesToComplexConverterState[O]) blockHandler(block *buffers.Block[byte]) {
-	filter.logger.WithField("block", block).Trace("Stream")
+func (filter *bytesToComplexConverterState[T]) blockHandler(block *buffers.Block[byte]) {
+	filter.logger.WithField("block", block).Trace("Stream in")
 	var outBlock = filter.output.Next()
 	filter.timestamp = block.CopyTimestamp(filter.timestamp)
 	filter.timestamp.Copy(outBlock.Timestamp)
 	switch any(filter.resultType).(type) {
 	case complex64:
-		float32Converter[O](block.Data, outBlock)
+		float32Converter[T](block.Data, outBlock)
 	case complex128:
-		float64Converter[O](block.Data, outBlock)
+		float64Converter[T](block.Data, outBlock)
 	}
 	filter.output.Send(outBlock)
 }
 
-func (filter *bytesToComplexConverterState[O]) close() {
+func (filter *bytesToComplexConverterState[T]) close() {
 	filter.output.Close()
 	filter.input.Done()
 	filter.input = nil
 	filter.output = nil
 }
 
-func (filter *bytesToComplexConverterState[O]) loop() {
+func (filter *bytesToComplexConverterState[T]) loop() {
 	var closed bool
 	filter.logger.Debug("Starting")
 	for {

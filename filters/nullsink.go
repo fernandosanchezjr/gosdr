@@ -20,7 +20,7 @@ func nullSinkLoop[T buffers.BlockType](input *buffers.Stream[T]) {
 		"id":     id,
 	})
 	var handler = func(block *buffers.Block[T]) {
-		logger.WithField("block", block).Trace("Stream")
+		logger.WithField("block", block).Trace("Stream in")
 	}
 	logger.Debug("Starting")
 	for {

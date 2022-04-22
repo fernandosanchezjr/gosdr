@@ -1,6 +1,8 @@
 package buffers
 
-import "container/ring"
+import (
+	"container/ring"
+)
 
 type BlockRing[T BlockType] struct {
 	buffers *ring.Ring
@@ -28,4 +30,12 @@ func (r *BlockRing[T]) init(size int) {
 func (r *BlockRing[T]) Next() *Block[T] {
 	r.buffers = r.buffers.Next()
 	return r.buffers.Value.(*Block[T])
+}
+
+func (r *BlockRing[T]) ReverseCopy(destination []*Block[T]) {
+	var current = r.buffers
+	for i := len(destination) - 1; i >= 0; i-- {
+		destination[i] = current.Value.(*Block[T])
+		current = current.Prev()
+	}
 }

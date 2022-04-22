@@ -72,7 +72,7 @@ func deviceController(manager *sdr.Manager, deviceIds chan devices.Id) {
 				continue
 			}
 			var bufferCount = conn.GetBuffersPerSecond()
-			var input, graphErr = createGraph2(conn, bufferCount)
+			var input, graphErr = createGraph(conn, bufferCount)
 			if graphErr != nil {
 				log.WithError(graphErr).Error("createGraph()")
 				manager.Close(id)

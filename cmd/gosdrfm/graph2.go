@@ -7,8 +7,9 @@ import (
 	"github.com/fernandosanchezjr/gosdr/units"
 )
 
-func createGraph2(conn devices.Connection, bufferCount int) (input *buffers.Stream[byte], err error) {
-	input = buffers.NewStream[byte](int(conn.SampleBufferSize()), bufferCount)
+func createGraph(conn devices.Connection, bufferCount int) (input *buffers.Stream[byte], err error) {
+	var sampleBufferSize = int(conn.SampleBufferSize())
+	input = buffers.NewStream[byte](sampleBufferSize, bufferCount)
 	var complexOutput = filters.NewBytesToComplexConverter[complex64](input)
 	var resampledOutput = filters.NewResampler(complexOutput, int(units.Sps(200000).NearestSize(512)))
 	var fftOutput, fftErr = filters.NewFFT[complex64](resampledOutput, 1024)
@@ -16,6 +17,6 @@ func createGraph2(conn devices.Connection, bufferCount int) (input *buffers.Stre
 		err = fftErr
 		return
 	}
-	filters.NewNullSink[complex64](fftOutput)
+	filters.NewHistogram[complex64](fftOutput)
 	return
 }
