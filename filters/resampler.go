@@ -68,14 +68,6 @@ func (filter *resamplerState[T]) blockHandler(block *buffers.Block[T]) {
 			}
 		}
 	}
-	//for !block.End() {
-	//	filter.currentBlock.Write(block, filter.timestamp)
-	//	if filter.currentBlock.End() {
-	//		filter.output.Send(filter.currentBlock)
-	//		filter.currentBlock = filter.output.Next()
-	//		filter.timestamp.Increment()
-	//	}
-	//}
 }
 
 func (filter *resamplerState[T]) close() {

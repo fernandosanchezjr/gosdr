@@ -31,7 +31,7 @@ func NewBytesToComplexConverter[T bytesToComplexTypes](
 		input:  input,
 		output: output,
 		logger: log.WithFields(log.Fields{
-			"filter": "BytesToComplexConverter",
+			"filter": "Bytes To Complex Converter",
 			"id":     id,
 		}),
 	}

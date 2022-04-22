@@ -34,8 +34,11 @@ func (r *BlockRing[T]) Next() *Block[T] {
 
 func (r *BlockRing[T]) ReverseCopy(destination []*Block[T]) {
 	var current = r.buffers
+	var block *Block[T]
 	for i := len(destination) - 1; i >= 0; i-- {
-		destination[i] = current.Value.(*Block[T])
+		block = current.Value.(*Block[T])
+		block.Reset()
+		destination[i] = block
 		current = current.Prev()
 	}
 }

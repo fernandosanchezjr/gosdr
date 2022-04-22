@@ -63,11 +63,7 @@ func (filter *fftState[T]) fftComplex64(input, output []complex64) {
 func (filter *fftState[T]) blockHandler(block *buffers.Block[T]) {
 	filter.logger.WithField("block", block).Trace("Stream")
 	filter.timestamp = block.CopyTimestamp(filter.timestamp)
-	var blockPos int
-	for i := range filter.fftBlock.Data {
-		filter.fftBlock.Data[i] = block.Data[blockPos]
-		blockPos += filter.skipSamples
-	}
+	copy(filter.fftBlock.Data, block.Data)
 	var outputBlock = filter.output.Next()
 	switch inBuf := any(filter.fftBlock.Data).(type) {
 	case []complex64:
