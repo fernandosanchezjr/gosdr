@@ -8,53 +8,26 @@ import (
 
 var nullSinkId uint64
 
-func NewNullSink(iqInput chan *buffers.IQ, floatInput chan []float64, quit chan struct{}) {
-	if iqInput != nil {
-		go nullSinkLoop(iqInput, floatInput, quit)
-	}
+func NewNullSink[T buffers.BlockType](input *buffers.Stream[T]) {
+	go nullSinkLoop[T](input)
 }
 
-func nullSinkLoop(iqInput chan *buffers.IQ, floatInput chan []float64, quit chan struct{}) {
+func nullSinkLoop[T buffers.BlockType](input *buffers.Stream[T]) {
+	var closed bool
 	var id = atomic.AddUint64(&nullSinkId, 1)
-	log.WithFields(log.Fields{
+	var logger = log.WithFields(log.Fields{
 		"filter": "NullSink",
 		"id":     id,
-	}).Debug("Starting")
+	})
+	var handler = func(block *buffers.Block[T]) {
+		logger.WithField("block", block).Trace("Stream in")
+	}
+	logger.Debug("Starting")
 	for {
-		select {
-		case <-quit:
-			log.WithFields(log.Fields{
-				"filter": "NullSink",
-				"id":     id,
-			}).Debug("Exiting")
+		if closed = input.Receive(handler); closed {
+			input.Done()
+			logger.Debug("Exiting")
 			return
-		case in, ok := <-iqInput:
-			if !ok {
-				log.WithFields(log.Fields{
-					"filter": "NullSink",
-					"id":     id,
-				}).Debug("Exiting")
-				return
-			}
-			log.WithFields(log.Fields{
-				"filter":   "NullSink",
-				"id":       id,
-				"sequence": in.Sequence,
-				"type":     "IQ",
-			}).Trace("Sample received")
-		case _, ok := <-floatInput:
-			if !ok {
-				log.WithFields(log.Fields{
-					"filter": "NullSink",
-					"id":     id,
-				}).Trace("Exiting")
-				return
-			}
-			log.WithFields(log.Fields{
-				"filter": "NullSink",
-				"id":     id,
-				"type":   "Float",
-			}).Debug("Sample received")
 		}
 	}
 }
