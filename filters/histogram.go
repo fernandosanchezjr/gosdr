@@ -159,14 +159,16 @@ func (filter *histogramState[T]) drawingLoop() {
 	var width, height = unit.Dp(float32(1024)), unit.Dp(float32(filter.height))
 	var histogram = make([]float64, filter.input.Size)
 	var ops op.Ops
-	var closing bool
+	var inputClosing bool
 	window.Option(app.Size(width, height))
 	for {
 		select {
 		case e := <-window.Events():
 			switch e := e.(type) {
 			case system.DestroyEvent:
-				os.Exit(0)
+				if !inputClosing {
+					os.Exit(0)
+				}
 				return
 			case system.FrameEvent:
 				if filter.input == nil {
@@ -179,8 +181,8 @@ func (filter *histogramState[T]) drawingLoop() {
 				e.Frame(gtx.Ops)
 			}
 		case histogramData, ok := <-filter.histogramChan:
-			if !ok && !closing {
-				closing = true
+			if !ok && !inputClosing {
+				inputClosing = true
 				window.Perform(system.ActionClose)
 				window.Invalidate()
 				continue
