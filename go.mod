@@ -5,6 +5,7 @@ go 1.18
 require (
 	gioui.org v0.0.0-20220415143025-2338107abffd
 	gioui.org/x v0.0.0-20220318131752-bc7801f4bd03
+	github.com/argusdusty/gofft v1.2.1
 	github.com/dustin/go-humanize v1.0.0
 	github.com/jpoirier/gortlsdr v2.10.0+incompatible
 	github.com/kirsle/configdir v0.0.0-20170128060238-e45d2f54772f

@@ -3,49 +3,39 @@ package filters
 import (
 	"fmt"
 	"github.com/fernandosanchezjr/gosdr/buffers"
-	"github.com/racerxdl/segdsp/dsp/fft"
+	"github.com/fernandosanchezjr/gosdr/utils"
 	log "github.com/sirupsen/logrus"
 	"sync/atomic"
 )
 
 var fftId uint64
 
-type fftTypes interface {
-	complex64
+type fftState struct {
+	input     *buffers.Stream[complex128]
+	output    *buffers.Stream[complex128]
+	timestamp *buffers.Timestamp
+	midPoint  int
+	size      int
+	logger    *log.Entry
 }
 
-type fftState[T fftTypes] struct {
-	input       *buffers.Stream[T]
-	output      *buffers.Stream[T]
-	timestamp   *buffers.Timestamp
-	fftBlock    *buffers.Block[T]
-	window      []float32
-	skipSamples int
-	midPoint    int
-	logger      *log.Entry
-	resultType  T
-}
-
-func NewFFT[T fftTypes](
-	input *buffers.Stream[T],
+func NewFFT(
+	input *buffers.Stream[complex128],
 	fftSize int,
-) (output *buffers.Stream[T], err error) {
+) (output *buffers.Stream[complex128], err error) {
 	if fftSize > input.Size {
 		err = fmt.Errorf("fft size is greater than sample size: %d > %d", fftSize, input.Size)
 		return
 	}
 	var id = atomic.AddUint64(&fftId, 1)
-	var fftBlock = buffers.NewBlock[T](fftSize)
-	output = buffers.NewStream[T](fftSize, input.Count)
-	var filter = &fftState[T]{
-		input:       input,
-		output:      output,
-		fftBlock:    fftBlock,
-		window:      createWindowComplex64(fftSize),
-		skipSamples: input.Size / fftSize,
-		midPoint:    (fftSize / 2) + (fftSize % 2),
+	output = buffers.NewStream[complex128](fftSize, input.Count)
+	var filter = &fftState{
+		input:    input,
+		output:   output,
+		size:     fftSize,
+		midPoint: (fftSize / 2) + (fftSize % 2),
 		logger: log.WithFields(log.Fields{
-			"filter": fmt.Sprintf("FFT(%T)", fftBlock.Data[0]),
+			"filter": fmt.Sprintf("FFT(complex12) size %d", fftSize),
 			"id":     id,
 		}),
 	}
@@ -53,37 +43,23 @@ func NewFFT[T fftTypes](
 	return
 }
 
-func (filter *fftState[T]) fftComplex64(input, output []complex64) {
-	computeWindowComplex64(input, filter.window)
-	var fftOut = fft.FFT(input)
-	copy(output[:filter.midPoint], fftOut[filter.midPoint:])
-	copy(output[filter.midPoint:], fftOut[:filter.midPoint])
-}
-
-func (filter *fftState[T]) blockHandler(block *buffers.Block[T]) {
-	filter.logger.WithField("block", block).Trace("Stream")
+func (filter *fftState) blockHandler(block *buffers.Block[complex128]) {
+	filter.logger.WithField("block", block).Trace("Stream in")
 	filter.timestamp = block.CopyTimestamp(filter.timestamp)
-	copy(filter.fftBlock.Data, block.Data)
 	var outputBlock = filter.output.Next()
-	switch inBuf := any(filter.fftBlock.Data).(type) {
-	case []complex64:
-		switch outBuf := any(outputBlock.Data).(type) {
-		case []complex64:
-			filter.fftComplex64(inBuf, outBuf)
-		}
-	}
+	utils.FFTComplex128(block.Data[:filter.size], outputBlock.Data, filter.midPoint)
 	filter.timestamp.Copy(outputBlock.Timestamp)
 	filter.output.Send(outputBlock)
 }
 
-func (filter *fftState[T]) close() {
+func (filter *fftState) close() {
 	filter.output.Close()
 	filter.input.Done()
 	filter.input = nil
 	filter.output = nil
 }
 
-func (filter *fftState[T]) loop() {
+func (filter *fftState) loop() {
 	var closed bool
 	filter.logger.Debug("Starting")
 	for {

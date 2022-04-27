@@ -17,6 +17,8 @@ type bytesToComplexConverterState[T bytesToComplexTypes] struct {
 	input      *buffers.Stream[byte]
 	output     *buffers.Stream[T]
 	timestamp  *buffers.Timestamp
+	window32   []float32
+	window64   []float64
 	logger     *log.Entry
 	resultType T
 }
@@ -28,8 +30,10 @@ func NewBytesToComplexConverter[T bytesToComplexTypes](
 	var id = atomic.AddUint64(&bytesToComplexConverterId, 1)
 	output = buffers.NewStream[T](newSize, input.Count)
 	var filter = &bytesToComplexConverterState[T]{
-		input:  input,
-		output: output,
+		input:    input,
+		output:   output,
+		window32: utils.CreateWindow32(newSize),
+		window64: utils.CreateWindow64(newSize),
 		logger: log.WithFields(log.Fields{
 			"filter": "Bytes To Complex Converter",
 			"id":     id,
@@ -39,18 +43,28 @@ func NewBytesToComplexConverter[T bytesToComplexTypes](
 	return
 }
 
-func float32Converter[T bytesToComplexTypes](data []byte, out *buffers.Block[T]) {
+func float32Converter[T bytesToComplexTypes](data []byte, out *buffers.Block[T], window []float32) {
 	var outPos int
+	var windowValue float32
 	for i := 0; i < len(data); i += 2 {
-		out.Data[outPos] = T(complex(utils.ConvertByte[float32](data[i]), utils.ConvertByte[float32](data[i+1])))
+		windowValue = window[outPos]
+		out.Data[outPos] = T(complex(
+			utils.ConvertByte[float32](data[i])*windowValue,
+			utils.ConvertByte[float32](data[i+1])*windowValue,
+		))
 		outPos++
 	}
 }
 
-func float64Converter[T bytesToComplexTypes](data []byte, out *buffers.Block[T]) {
+func float64Converter[T bytesToComplexTypes](data []byte, out *buffers.Block[T], window []float64) {
 	var outPos int
+	var windowValue float64
 	for i := 0; i < len(data); i += 2 {
-		out.Data[outPos] = T(complex(utils.ConvertByte[float64](data[i]), utils.ConvertByte[float64](data[i+1])))
+		windowValue = window[outPos]
+		out.Data[outPos] = T(complex(
+			utils.ConvertByte[float64](data[i])*windowValue,
+			utils.ConvertByte[float64](data[i+1])*windowValue,
+		))
 		outPos++
 	}
 }
@@ -62,9 +76,9 @@ func (filter *bytesToComplexConverterState[T]) blockHandler(block *buffers.Block
 	filter.timestamp.Copy(outBlock.Timestamp)
 	switch any(filter.resultType).(type) {
 	case complex64:
-		float32Converter[T](block.Data, outBlock)
+		float32Converter[T](block.Data, outBlock, filter.window32)
 	case complex128:
-		float64Converter[T](block.Data, outBlock)
+		float64Converter[T](block.Data, outBlock, filter.window64)
 	}
 	filter.output.Send(outBlock)
 }

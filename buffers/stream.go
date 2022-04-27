@@ -77,3 +77,7 @@ func (s *Stream[T]) Next() *Block[T] {
 	next.Reset()
 	return next
 }
+
+func (s *Stream[T]) Clone() *Stream[T] {
+	return NewStream[T](s.Size, s.Count)
+}

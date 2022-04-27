@@ -32,7 +32,7 @@ func (r *BlockRing[T]) Next() *Block[T] {
 	return r.buffers.Value.(*Block[T])
 }
 
-func (r *BlockRing[T]) ReverseCopy(destination []*Block[T]) {
+func (r *BlockRing[T]) Copy(destination []*Block[T]) {
 	var current = r.buffers
 	var block *Block[T]
 	for i := len(destination) - 1; i >= 0; i-- {

@@ -11,7 +11,7 @@ import (
 	"gioui.org/op/paint"
 	"gioui.org/unit"
 	"github.com/fernandosanchezjr/gosdr/buffers"
-	"github.com/racerxdl/segdsp/tools"
+	"github.com/fernandosanchezjr/gosdr/utils"
 	log "github.com/sirupsen/logrus"
 	"image/color"
 	"math"
@@ -22,7 +22,7 @@ import (
 var histogramId uint64
 
 type histogramTypes interface {
-	complex64
+	complex64 | complex128
 }
 
 type histogramState[T histogramTypes] struct {
@@ -54,25 +54,28 @@ func NewHistogram[T histogramTypes](
 	return
 }
 
-func getPower(sample complex64) float64 {
-	if imag(sample) == 0.0 {
-		return 0.0
-	}
-	var value = 10.0 * math.Log10(float64(tools.ComplexAbsSquared(sample)))
-	if math.IsNaN(value) || math.IsInf(value, 0) {
-		return 0.0
-	}
-	return value
-}
-
 func getNormalizedValue(value float64, min float64, powerRange float64) float64 {
 	return 150.0 - ((value-min)/powerRange)*150.0
 }
 
-func calculateNormalizedPower(input []complex64, histogram []float64, height float64) {
+func calculateNormalizedPower64(input []complex64, histogram []float64, height float64) {
 	var power, min, max, powerRange float64
 	for i, value := range input {
-		power = getPower(value)
+		power = utils.GetPower64(value)
+		min = math.Min(min, power)
+		max = math.Max(max, power)
+		histogram[i] = power
+	}
+	powerRange = max - min
+	for i, value := range histogram {
+		histogram[i] = (getNormalizedValue(value, min, powerRange) / 150.0) * height
+	}
+}
+
+func calculateNormalizedPower128(input []complex128, histogram []float64, height float64) {
+	var power, min, max, powerRange float64
+	for i, value := range input {
+		power = utils.GetPower128(value)
 		min = math.Min(min, power)
 		max = math.Max(max, power)
 		histogram[i] = power
@@ -89,7 +92,11 @@ func (filter *histogramState[T]) blockHandler(block *buffers.Block[T]) {
 	switch inBuf := any(block.Data).(type) {
 	case []complex64:
 		output = filter.histogramRing.Next()
-		calculateNormalizedPower(inBuf, output.Data, filter.height)
+		calculateNormalizedPower64(inBuf, output.Data, filter.height)
+		filter.histogramChan <- output.Data
+	case []complex128:
+		output = filter.histogramRing.Next()
+		calculateNormalizedPower128(inBuf, output.Data, filter.height)
 		filter.histogramChan <- output.Data
 	}
 }
@@ -149,7 +156,7 @@ func drawHistogram(sampleRate int, gtx layout.Context, histogram []float64, pixe
 
 func (filter *histogramState[T]) drawingLoop() {
 	var window = app.NewWindow(app.Title("GOSDR IQ Histogram"))
-	var width, height = unit.Dp(float32(filter.input.Size)), unit.Dp(float32(filter.height))
+	var width, height = unit.Dp(float32(1024)), unit.Dp(float32(filter.height))
 	var histogram = make([]float64, filter.input.Size)
 	var ops op.Ops
 	var closing bool
@@ -162,12 +169,13 @@ func (filter *histogramState[T]) drawingLoop() {
 				os.Exit(0)
 				return
 			case system.FrameEvent:
+				if filter.input == nil {
+					continue
+				}
 				filter.height = float64(e.Size.Y)
 				filter.pixelWidth = float32(e.Size.X) / float32(filter.input.Size)
 				gtx := layout.NewContext(&ops, e)
-				if filter.input != nil {
-					drawHistogram(filter.input.Size, gtx, histogram, filter.pixelWidth)
-				}
+				drawHistogram(filter.input.Size, gtx, histogram, filter.pixelWidth)
 				e.Frame(gtx.Ops)
 			}
 		case histogramData, ok := <-filter.histogramChan:
