@@ -14,11 +14,3 @@ func CreateWindow32(fftSize int) []float32 {
 func CreateWindow64(fftSize int) []float64 {
 	return dsp.BlackmanHarris(fftSize, 92)
 }
-
-func ComputeWindowComplex128(input []complex128, window []float64) {
-	var complexValue complex128
-	for pos, value := range window {
-		complexValue = input[pos]
-		input[pos] = complex(real(complexValue)*value, imag(complexValue)*value)
-	}
-}

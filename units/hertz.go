@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-type Hertz int
+type Hertz float64
 
 func (h Hertz) String() string {
 	return humanize.SI(float64(h), "Hz")
@@ -21,7 +21,5 @@ func ParseHertz(value string) (Hertz, error) {
 }
 
 func (h Hertz) Float() float64 {
-	//var value, _ = humanize.ComputeSI(float64(h))
-	//return value
 	return float64(h)
 }
