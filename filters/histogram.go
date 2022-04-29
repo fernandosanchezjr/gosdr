@@ -29,21 +29,29 @@ type histogramState[T histogramTypes] struct {
 	input         *buffers.Stream[T]
 	histogramRing *buffers.BlockRing[float64]
 	histogramChan chan []float64
+	histogram     []float64
 	height        float64
 	pixelWidth    float32
+	peakWidth     int
+	size          int
 	logger        *log.Entry
 }
 
 func NewHistogram[T histogramTypes](
 	input *buffers.Stream[T],
+	size int,
 ) {
 	var id = atomic.AddUint64(&histogramId, 1)
 	var histogramBlock = buffers.NewBlock[T](input.Size)
+	var peakWidth = input.Size / size
 	var filter = &histogramState[T]{
 		input:         input,
-		histogramRing: buffers.NewBlockRing[float64](input.Size, input.Count),
+		histogramRing: buffers.NewBlockRing[float64](size, input.Count),
 		histogramChan: make(chan []float64, input.Count),
+		histogram:     make([]float64, input.Size),
 		height:        360,
+		peakWidth:     peakWidth,
+		size:          size,
 		logger: log.WithFields(log.Fields{
 			"filter": fmt.Sprintf("Histogram(%T)", histogramBlock.Data[0]),
 			"id":     id,
@@ -88,17 +96,24 @@ func calculateNormalizedPower128(input []complex128, histogram []float64, height
 
 func (filter *histogramState[T]) blockHandler(block *buffers.Block[T]) {
 	filter.logger.WithField("block", block).Trace("Stream in")
-	var output *buffers.Block[float64]
 	switch inBuf := any(block.Data).(type) {
 	case []complex64:
-		output = filter.histogramRing.Next()
-		calculateNormalizedPower64(inBuf, output.Data, filter.height)
-		filter.histogramChan <- output.Data
+		calculateNormalizedPower64(inBuf, filter.histogram, filter.height)
 	case []complex128:
-		output = filter.histogramRing.Next()
-		calculateNormalizedPower128(inBuf, output.Data, filter.height)
-		filter.histogramChan <- output.Data
+		calculateNormalizedPower128(inBuf, filter.histogram, filter.height)
 	}
+	var output = filter.histogramRing.Next()
+	var minPower float64
+	var histogramPos = 0
+	for i := range output.Data {
+		minPower = filter.height
+		for j := 0; j < filter.peakWidth; j++ {
+			minPower = math.Min(minPower, filter.histogram[histogramPos])
+			histogramPos += 1
+		}
+		output.Data[i] = minPower
+	}
+	filter.histogramChan <- output.Data
 }
 
 func (filter *histogramState[T]) close() {
@@ -156,8 +171,8 @@ func drawHistogram(sampleRate int, gtx layout.Context, histogram []float64, pixe
 
 func (filter *histogramState[T]) drawingLoop() {
 	var window = app.NewWindow(app.Title("GOSDR IQ Histogram"))
-	var width, height = unit.Dp(float32(1024)), unit.Dp(float32(filter.height))
-	var histogram = make([]float64, filter.input.Size)
+	var width, height = unit.Dp(float32(filter.size)), unit.Dp(float32(filter.height))
+	var histogram = make([]float64, filter.size)
 	var ops op.Ops
 	var inputClosing bool
 	window.Option(app.Size(width, height))
@@ -174,8 +189,9 @@ func (filter *histogramState[T]) drawingLoop() {
 				if filter.input == nil {
 					continue
 				}
+				ops.Reset()
 				filter.height = float64(e.Size.Y)
-				filter.pixelWidth = float32(e.Size.X) / float32(filter.input.Size)
+				filter.pixelWidth = float32(e.Size.X) / float32(filter.size)
 				gtx := layout.NewContext(&ops, e)
 				drawHistogram(filter.input.Size, gtx, histogram, filter.pixelWidth)
 				e.Frame(gtx.Ops)
@@ -184,7 +200,6 @@ func (filter *histogramState[T]) drawingLoop() {
 			if !ok && !inputClosing {
 				inputClosing = true
 				window.Perform(system.ActionClose)
-				window.Invalidate()
 				continue
 			}
 			copy(histogram, histogramData)

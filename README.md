@@ -33,7 +33,7 @@ INFO[2022-01-18T22:34:18.183-0800] Received device event                        
 * FM signal histogram - now even less wonky than before
   * WIP conversion to pure GIO 
 
-![GOSDR IQ Histogram](images/wip/gosdrfm.png)
+![GOSDR IQ Histogram](images/wip/gosdrfm.gif)
 
 ```
 $ gosdrfm -?
