@@ -66,32 +66,32 @@ func getNormalizedValue(value float64, min float64, powerRange float64) float64 
 	return 150.0 - ((value-min)/powerRange)*150.0
 }
 
+func normalizeHistogram(histogram []float64, min float64, powerRange float64, height float64) {
+	for i, value := range histogram {
+		histogram[i] = (getNormalizedValue(value, min, powerRange) / 150.0) * height
+	}
+}
+
 func calculateNormalizedPower64(input []complex64, histogram []float64, height float64) {
-	var power, min, max, powerRange float64
+	var power, min, max float64
 	for i, value := range input {
 		power = utils.GetPower64(value)
 		min = math.Min(min, power)
 		max = math.Max(max, power)
 		histogram[i] = power
 	}
-	powerRange = max - min
-	for i, value := range histogram {
-		histogram[i] = (getNormalizedValue(value, min, powerRange) / 150.0) * height
-	}
+	normalizeHistogram(histogram, min, max-min, height)
 }
 
 func calculateNormalizedPower128(input []complex128, histogram []float64, height float64) {
-	var power, min, max, powerRange float64
+	var power, min, max float64
 	for i, value := range input {
 		power = utils.GetPower128(value)
 		min = math.Min(min, power)
 		max = math.Max(max, power)
 		histogram[i] = power
 	}
-	powerRange = max - min
-	for i, value := range histogram {
-		histogram[i] = (getNormalizedValue(value, min, powerRange) / 150.0) * height
-	}
+	normalizeHistogram(histogram, min, max-min, height)
 }
 
 func (filter *histogramState[T]) blockHandler(block *buffers.Block[T]) {
