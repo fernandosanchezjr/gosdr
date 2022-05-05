@@ -12,6 +12,7 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op"
 	"github.com/fernandosanchezjr/gosdr/cmd/gosdr/pages"
+	panadapterPage "github.com/fernandosanchezjr/gosdr/cmd/gosdr/pages/panadapter"
 	sdrPage "github.com/fernandosanchezjr/gosdr/cmd/gosdr/pages/sdr"
 )
 
@@ -36,6 +37,7 @@ func loop(w *app.Window, sdrManager *sdr.Manager) error {
 	var router = pages.NewRouter(th, sdrManager)
 
 	router.Register(0, sdrPage.New(&router))
+	router.Register(1, panadapterPage.New(&router))
 
 	for {
 		select {
