@@ -1,8 +1,8 @@
 package rtlsdr
 
 import (
+	rtlsdr "github.com/fernandosanchezjr/gortlsdr"
 	"github.com/fernandosanchezjr/gosdr/devices"
-	"github.com/jpoirier/gortlsdr"
 )
 
 func ListDevices() []*devices.Info {

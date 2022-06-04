@@ -1,8 +1,8 @@
 package rtlsdr
 
 import (
+	rtl "github.com/fernandosanchezjr/gortlsdr"
 	"github.com/fernandosanchezjr/gosdr/devices"
-	rtl "github.com/jpoirier/gortlsdr"
 	log "github.com/sirupsen/logrus"
 )
 

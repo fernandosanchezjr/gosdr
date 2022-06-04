@@ -1,5 +1,19 @@
 # gosdr
 
+## Dependencies
+
+### Ubuntu
+
+* ```bash
+  apt install librtlsdr-dev gcc pkg-config libwayland-dev libx11-dev \
+      libx11-xcb-dev libxkbcommon-x11-dev libgles2-mesa-dev \
+      libegl1-mesa-dev libffi-dev libxcursor-dev libvulkan-dev
+  ```
+
+### Go
+
+* [goenv](https://github.com/fernandosanchezjr/goenv): recommended when compiling from the command line
+
 ## WIP
 
 ### GOSDR

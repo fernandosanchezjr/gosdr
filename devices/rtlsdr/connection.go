@@ -2,18 +2,20 @@ package rtlsdr
 
 import (
 	"errors"
+	rtl "github.com/fernandosanchezjr/gortlsdr"
 	"github.com/fernandosanchezjr/gosdr/devices"
 	"github.com/fernandosanchezjr/gosdr/units"
 	"github.com/fernandosanchezjr/gosdr/utils"
-	rtl "github.com/jpoirier/gortlsdr"
 	log "github.com/sirupsen/logrus"
 )
 
 const (
 	defaultSampleRate      = units.Sps(2_400_256)
-	defaultBandwidth       = units.Hertz(2_400_256)
+	defaultBandwidth       = units.Hertz(defaultSampleRate) / 2
 	defaultSampleBlockSize = units.Sps(16 * 32 * 512)
 	sampleModulus          = 1024
+	minimumFrequency       = units.Hertz(24_000_000)
+	maximumFrequency       = units.Hertz(1_766_000_000)
 )
 
 type Connection struct {
@@ -24,6 +26,7 @@ type Connection struct {
 	CenterFrequency units.Hertz
 	OffsetTuning    bool
 	SampleRate      units.Sps
+	Bandwidth       units.Hertz
 	AGCMode         bool
 	AutoGain        bool
 	BiasTee         bool
@@ -32,7 +35,6 @@ type Connection struct {
 	TunerType       string
 	RTLFrequency    units.Hertz
 	TunerFrequency  units.Hertz
-	TunerBandwidth  units.Hertz
 	samplingFlag    uint32
 	sampling        bool
 }
@@ -48,10 +50,11 @@ func OpenIndex(index int) (*Connection, error) {
 		return nil, infoErr
 	}
 	var device = &Connection{
-		Info:           info,
-		context:        context,
-		SampleRate:     defaultSampleRate,
-		TunerBandwidth: defaultBandwidth,
+		Info:            info,
+		context:         context,
+		SampleRate:      defaultSampleRate,
+		Bandwidth:       defaultBandwidth,
+		CenterFrequency: minimumFrequency,
 	}
 	if infoErr := device.init(); infoErr != nil {
 		return nil, infoErr
@@ -78,8 +81,11 @@ func (d *Connection) IsOpen() bool {
 }
 
 func (d *Connection) init() error {
-	if sampleErr := d.SetSampleRate(defaultSampleRate); sampleErr != nil {
+	if sampleErr := d.SetSampleRate(d.SampleRate); sampleErr != nil {
 		return sampleErr
+	}
+	if frequencyErr := d.SetCenterFrequency(d.CenterFrequency); frequencyErr != nil {
+		return frequencyErr
 	}
 	return d.Refresh()
 }
@@ -121,6 +127,7 @@ func (d *Connection) Fields() log.Fields {
 	f["centerFrequency"] = d.CenterFrequency
 	f["offsetTuning"] = d.OffsetTuning
 	f["sampleRate"] = d.SampleRate
+	f["bandwidth"] = d.Bandwidth
 	f["agcMode"] = d.AGCMode
 	f["autoGain"] = d.AutoGain
 	f["biasTee"] = d.BiasTee
@@ -254,18 +261,10 @@ func (d *Connection) SampleBufferSize() units.Sps {
 	return defaultSampleBlockSize
 }
 
-func (d *Connection) samplingStarted() {
-	d.sampling = true
-}
-
-func (d *Connection) samplingStopped() {
-	d.sampling = false
-}
-
 func (d *Connection) RunSampler(handler func(samples []byte)) error {
 	utils.SetFlag(&d.samplingFlag)
 	defer utils.UnsetFlag(&d.samplingFlag)
-	return d.context.ReadAsync(handler, nil, 0, 0)
+	return d.context.ReadAsync(handler, 0, 0)
 }
 
 func (d *Connection) StopSampling() error {
