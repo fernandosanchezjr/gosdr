@@ -83,3 +83,7 @@ func (ts *Timestamp) Less(other *Timestamp) bool {
 	}
 	return ts.last <= other.last
 }
+
+func (ts *Timestamp) Set(value uint64) {
+	ts.digits[ts.last] = value
+}

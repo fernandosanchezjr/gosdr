@@ -7,16 +7,23 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func applicationLoop(manager *sdr.Manager) {
-	go selector(manager)
-}
+const appName = "gosdrrx"
 
 func main() {
+	log.Info("Starting ", appName)
 	config.ParseFlags()
 	config.SetupLogger()
-	log.Info("Starting GOSDRRX")
+	var cfg, configErr = config.LoadConfig(appName)
+	if configErr != nil {
+		log.WithError(configErr).Fatal("Error reading configuration")
+	}
+	var db, dbErr = startDatastore(cfg)
+	if dbErr != nil {
+		log.WithError(dbErr).Fatal("Error opening datastore")
+	}
+	defer stopDatastore(db)
 	var manager = sdr.NewManager()
 	defer manager.Stop()
-	go applicationLoop(manager)
+	go selector(manager)
 	utils.Wait()
 }
