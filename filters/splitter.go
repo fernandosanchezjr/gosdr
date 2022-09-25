@@ -15,7 +15,7 @@ type splitterState[T buffers.BlockType] struct {
 	logger    *log.Entry
 }
 
-func NewSplitter[T buffers.BlockType](input *buffers.Stream[T], outputs []*buffers.Stream[T]) {
+func NewSplitter[T buffers.BlockType](input *buffers.Stream[T], outputs ...*buffers.Stream[T]) {
 	var id = atomic.AddUint64(&splitterId, 1)
 	var filter = &splitterState[T]{
 		input:   input,

@@ -8,6 +8,6 @@ import (
 
 func createGraph(conn devices.Connection, bufferCount int) (input *buffers.Stream[byte], err error) {
 	input = buffers.NewStream[byte](int(conn.SampleBufferSize()), bufferCount)
-	filters.NewNullSink[byte](input)
+	filters.NewSplitter[byte](input)
 	return
 }
