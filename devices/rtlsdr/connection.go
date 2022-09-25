@@ -2,6 +2,7 @@ package rtlsdr
 
 import (
 	"errors"
+	"fmt"
 	rtl "github.com/fernandosanchezjr/gortlsdr"
 	"github.com/fernandosanchezjr/gosdr/devices"
 	"github.com/fernandosanchezjr/gosdr/units"
@@ -233,6 +234,12 @@ func (d *Connection) GetCenterFrequency() units.Hertz {
 }
 
 func (d *Connection) SetCenterFrequency(centerFrequency units.Hertz) error {
+	if centerFrequency < minimumFrequency {
+		return fmt.Errorf("invalid frequency %s - minimum frequency is %s", centerFrequency, minimumFrequency)
+	}
+	if centerFrequency > maximumFrequency {
+		return fmt.Errorf("invalid frequency %s - maximum frequency is %s", centerFrequency, maximumFrequency)
+	}
 	var err = d.context.SetCenterFreq(int(centerFrequency))
 	if err == nil {
 		d.CenterFrequency = centerFrequency
