@@ -10,7 +10,7 @@ require (
 	github.com/fernandosanchezjr/gortlsdr v0.0.0-20220528042423-7d79f4780e72
 	github.com/kirsle/configdir v0.0.0-20170128060238-e45d2f54772f
 	github.com/racerxdl/segdsp v0.0.0-20190825170906-a855d00a24a8
-	github.com/sirupsen/logrus v1.8.1
+	github.com/sirupsen/logrus v1.9.0
 	github.com/xujiajun/nutsdb v0.9.0
 	github.com/zoumo/goset v0.2.0
 	golang.org/x/exp/shiny v0.0.0-20220518171630-0b5c67f07fdf
@@ -28,6 +28,6 @@ require (
 	github.com/xujiajun/mmap-go v1.0.1 // indirect
 	github.com/xujiajun/utils v0.0.0-20190123093513-8bf096c4f53b // indirect
 	golang.org/x/image v0.0.0-20220413100746-70e8d0d3baa9 // indirect
-	golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a // indirect
+	golang.org/x/sys v0.0.0-20220715151400-c0bba94af5f8 // indirect
 	golang.org/x/text v0.3.7 // indirect
 )
