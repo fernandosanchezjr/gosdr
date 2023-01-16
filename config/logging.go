@@ -64,3 +64,8 @@ func SetupLogger() {
 	}
 	logrus.WithFields(details).Trace("Logging configuration")
 }
+
+func SetLogLevel(level logrus.Level) {
+	logrus.SetLevel(level)
+	logLevel = level
+}

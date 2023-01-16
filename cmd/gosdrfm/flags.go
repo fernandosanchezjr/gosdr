@@ -17,6 +17,7 @@ var ppm int
 
 func init() {
 	flag.BoolVar(&rtlSDR, "rtl", rtlSDR, "use RTL-SDR devices")
+	//TODO: check usages of deviceIndex - will always be zero with current default
 	flag.IntVar(&deviceIndex, "index", deviceIndex, "device index")
 	flag.StringVar(&deviceSerial, "serial", deviceSerial, "device serial")
 	flag.StringVar(&requestedFrequency, "frequency", requestedFrequency, "tuner frequency in Hz")
