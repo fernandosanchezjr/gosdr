@@ -17,11 +17,15 @@ func main() {
 	if configErr != nil {
 		log.WithError(configErr).Fatal("Error reading configuration")
 	}
-	var db, dbErr = startDatastore(cfg)
+	var db, dbErr = startDatastore(cfg.DataFolder)
 	if dbErr != nil {
 		log.WithError(dbErr).Fatal("Error opening datastore")
 	}
 	defer stopDatastore(db)
+
+	buckets, bucketErr := listBuckets(db)
+	log.WithError(bucketErr).WithField("buckets", buckets).Info("listBuckets result")
+
 	var manager = sdr.NewManager()
 	defer manager.Stop()
 	go selector(manager)
