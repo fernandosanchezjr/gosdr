@@ -6,7 +6,7 @@ require (
 	gioui.org v0.0.0-20220527093113-2a0a196d1ae4
 	gioui.org/x v0.0.0-20220527154558-1b330a12ccbe
 	github.com/argusdusty/gofft v1.2.1
-	github.com/dustin/go-humanize v1.0.0
+	github.com/dustin/go-humanize v1.0.1
 	github.com/fernandosanchezjr/gortlsdr v0.0.0-20220528042423-7d79f4780e72
 	github.com/kirsle/configdir v0.0.0-20170128060238-e45d2f54772f
 	github.com/racerxdl/segdsp v0.0.0-20190825170906-a855d00a24a8
