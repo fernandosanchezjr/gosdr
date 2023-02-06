@@ -12,9 +12,9 @@ require (
 	github.com/racerxdl/segdsp v0.0.0-20190825170906-a855d00a24a8
 	github.com/sirupsen/logrus v1.9.0
 	github.com/zoumo/goset v0.2.0
-	go.etcd.io/bbolt v1.3.6
+	go.etcd.io/bbolt v1.3.7
 	golang.org/x/exp/shiny v0.0.0-20220518171630-0b5c67f07fdf
-	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
@@ -23,8 +23,7 @@ require (
 	github.com/benoitkugler/textlayout v0.1.3 // indirect
 	github.com/gioui/uax v0.2.1-0.20220325163150-e3d987515a12 // indirect
 	github.com/go-text/typesetting v0.0.0-20220411150340-35994bc27a7b // indirect
-	github.com/stretchr/testify v1.7.1 // indirect
 	golang.org/x/image v0.0.0-20220413100746-70e8d0d3baa9 // indirect
-	golang.org/x/sys v0.0.0-20220715151400-c0bba94af5f8 // indirect
+	golang.org/x/sys v0.4.0 // indirect
 	golang.org/x/text v0.3.7 // indirect
 )
