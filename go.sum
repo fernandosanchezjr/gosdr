@@ -109,8 +109,8 @@ github.com/envoyproxy/protoc-gen-validate v0.1.0/go.mod h1:iSmxcyjqTsJpI2R4NaDN7
 github.com/esiqveland/notify v0.11.0/go.mod h1:63UbVSaeJwF0LVJARHFuPgUAoM7o1BEvCZyknsuonBc=
 github.com/fatih/color v1.7.0/go.mod h1:Zm6kSWBoL9eyXnKyktHP6abPY2pDugNf5KwzbycvMj4=
 github.com/fatih/structs v1.1.0/go.mod h1:9NiDSp5zOcgEDl+j00MP/WkGVPOlPRLejGD8Ga6PJ7M=
-github.com/fernandosanchezjr/gortlsdr v0.0.0-20220528042423-7d79f4780e72 h1:OZ5cg0v8+upO6EuHi0AWCyCKc4ZOCFp+c9Hwt8GOH1o=
-github.com/fernandosanchezjr/gortlsdr v0.0.0-20220528042423-7d79f4780e72/go.mod h1:eEjcmnwn+MfRZoT3GhZto2dHbL26R+wcig5DZPtZ5mY=
+github.com/fernandosanchezjr/gortlsdr v2.10.0+incompatible h1:oqN/X5g830x7RCOHsB8oMV9DYXYyJxZ/OD3qKjHL74Y=
+github.com/fernandosanchezjr/gortlsdr v2.10.0+incompatible/go.mod h1:tFMLuZ2o5p7+JjqM82teB2zukFrejdgHNncyHiRJ+iQ=
 github.com/fortytw2/leaktest v1.3.0/go.mod h1:jDsjWgpAGjm2CA7WthBh/CdZYEPF31XHquHwclZch5g=
 github.com/franela/goblin v0.0.0-20200105215937-c9ffbefa60db/go.mod h1:7dvUGVsVBjqR7JHJk0brhHOZYGmfBYOrK0ZhYMEtBr4=
 github.com/franela/goreq v0.0.0-20171204163338-bcd34c9993f8/go.mod h1:ZhphrRTfi2rbfLwlschooIH4+wKKDR4Pdxhh+TRoA20=
