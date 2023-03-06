@@ -14,7 +14,7 @@ require (
 	github.com/zoumo/goset v0.2.0
 	go.etcd.io/bbolt v1.3.6
 	golang.org/x/exp/shiny v0.0.0-20220518171630-0b5c67f07fdf
-	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
